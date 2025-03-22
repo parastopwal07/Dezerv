@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Pie } from 'react-chartjs-2';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Chart as ChartJS,
@@ -9,7 +9,8 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement
 } from 'chart.js';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
@@ -23,7 +24,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement
 );
 
 // Annual growth rates for different asset classes
@@ -130,6 +132,16 @@ const PortfolioAllocation: React.FC = () => {
       newAllocation[2].value = riskProfile.allocationStrategy.cash;
       newAllocation[3].value = riskProfile.allocationStrategy.bonds;
       newAllocation[4].value = riskProfile.allocationStrategy.equities * 0.25; // 25% of equities to mutual funds
+      
+      // Normalize to ensure sum is 100%
+      const total = newAllocation.reduce((sum, item) => sum + item.value, 0);
+      if (Math.abs(total - 100) > 0.1) {
+        const scaleFactor = 100 / total;
+        newAllocation.forEach(item => {
+          item.value = Math.round(item.value * scaleFactor * 10) / 10;
+        });
+      }
+      
       setAllocation(newAllocation);
     }
   };
@@ -206,6 +218,15 @@ const PortfolioAllocation: React.FC = () => {
         item.value = Math.max(0, item.value - (difference * (item.value / totalOthers)));
       }
     });
+    
+    // Normalize to ensure sum is 100%
+    const total = newAllocation.reduce((sum, item) => sum + item.value, 0);
+    if (Math.abs(total - 100) > 0.1) {
+      const scaleFactor = 100 / total;
+      newAllocation.forEach(item => {
+        item.value = Math.round(item.value * scaleFactor * 10) / 10;
+      });
+    }
     
     setAllocation(newAllocation);
   };
@@ -453,34 +474,86 @@ const PortfolioAllocation: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
         <h3 className="text-lg font-semibold mb-4">Customize Your Allocation</h3>
         
-        {allocation.map((asset, index) => (
-          <div key={asset.key} className="mb-4">
-            <div className="flex justify-between mb-2">
-              <label className="font-medium">{asset.label}</label>
-              <span className="text-gray-600">{asset.value.toFixed(1)}%</span>
-            </div>
-            <div 
-              className="w-full h-3 bg-gray-200 rounded-full overflow-hidden"
-            >
-              <div 
-                className="h-full rounded-full" 
-                style={{
-                  width: `${asset.value}%`,
-                  backgroundColor: asset.color
-                }}
-              ></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            {allocation.map((asset, index) => (
+              <div key={asset.key} className="mb-4">
+                <div className="flex justify-between mb-2">
+                  <label className="font-medium">{asset.label}</label>
+                  <span className="text-gray-600">{asset.value.toFixed(1)}%</span>
+                </div>
+                <div 
+                  className="w-full h-3 bg-gray-200 rounded-full overflow-hidden"
+                >
+                  <div 
+                    className="h-full rounded-full" 
+                    style={{
+                      width: `${asset.value}%`,
+                      backgroundColor: asset.color
+                    }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+
+            <div className="mt-6">
+              <label className="block font-medium mb-2">Initial Investment (₹)</label>
+              <input
+                type="number"
+                value={initialInvestment}
+                onChange={(e) => setInitialInvestment(Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-full px-3 py-2 border rounded-md"
+              />
             </div>
           </div>
-        ))}
-
-        <div className="mt-6">
-          <label className="block font-medium mb-2">Initial Investment (₹)</label>
-          <input
-            type="number"
-            value={initialInvestment}
-            onChange={(e) => setInitialInvestment(Math.max(0, parseInt(e.target.value) || 0))}
-            className="w-full px-3 py-2 border rounded-md"
-          />
+          
+          <div className="flex flex-col items-center justify-center">
+            <h4 className="text-md font-medium mb-4">Asset Allocation</h4>
+            <div className="w-full max-w-xs">
+              <Pie 
+                data={{
+                  labels: allocation.map(a => a.label),
+                  datasets: [
+                    {
+                      data: allocation.map(a => a.value),
+                      backgroundColor: allocation.map(a => a.color),
+                      borderWidth: 1,
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        boxWidth: 12,
+                        font: {
+                          size: 11
+                        }
+                      }
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          const value = context.raw as number;
+                          return `${context.label}: ${value.toFixed(1)}%`;
+                        }
+                      }
+                    }
+                  }
+                }}
+              />
+            </div>
+            <p className="text-sm text-gray-500 mt-4">
+              Total: {
+                (() => {
+                  const total = allocation.reduce((sum, item) => sum + item.value, 0);
+                  return (total > 100) ? "100.0" : total.toFixed(1);
+                })()
+              }%
+            </p>
+          </div>
         </div>
       </div>
 
