@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,8 +11,9 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
+import { setRiskProfile } from '../store/slices/riskProfileSlice';
 
 ChartJS.register(
   CategoryScale,
@@ -41,6 +42,10 @@ interface AllocationSlider {
 }
 
 const PortfolioAllocation: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const recalculated = location.state?.recalculated || false;
+  const dispatch = useDispatch();
   const riskProfile = useSelector((state: RootState) => state.riskProfile.currentProfile);
   const userResponses = useSelector((state: RootState) => state.riskProfile.responses || {});
   
@@ -72,7 +77,13 @@ const PortfolioAllocation: React.FC = () => {
     if (isAutoUpdate && riskProfile?.allocationStrategy) {
       updateAllocationFromProfile();
     }
-  }, [riskProfile, isAutoUpdate]);
+    
+    // If returning from a recalculation, show a notification
+    if (recalculated) {
+      // You could display a success toast or notification here
+      console.log('Risk profile successfully recalculated!');
+    }
+  }, [riskProfile, isAutoUpdate, recalculated]);
 
   // Function to update allocation based on risk profile
   const updateAllocationFromProfile = () => {
@@ -96,6 +107,12 @@ const PortfolioAllocation: React.FC = () => {
   // Function to handle Manual Update button click
   const handleManualUpdate = () => {
     setIsAutoUpdate(false);
+    
+    // Store current state in localStorage before navigating
+    localStorage.setItem('manualUpdateMode', 'true');
+    
+    // Navigate to risk assessment
+    navigate('/risk-assessment');
   };
 
   const handleSliderChange = (index: number, value: number) => {
@@ -160,6 +177,14 @@ const PortfolioAllocation: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-6">Portfolio Allocation</h2>
+      
+      {/* Add a notification for recalculation */}
+      {recalculated && (
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
+          <p className="font-bold">Profile Updated</p>
+          <p>Your risk profile has been recalculated and your portfolio allocation has been updated.</p>
+        </div>
+      )}
       
       {/* Risk Score Display */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">

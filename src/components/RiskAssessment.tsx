@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -103,6 +103,7 @@ const questions = [
 const RiskAssessment: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isManualUpdateMode, setIsManualUpdateMode] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<QuestionnaireResponse>({
     ageGroup: '18-25',
@@ -119,6 +120,17 @@ const RiskAssessment: React.FC = () => {
   });
 
   const currentQuestion = questions[currentQuestionIndex];
+
+  useEffect(() => {
+    // Check if the user is coming from manual update
+    const manualUpdateMode = localStorage.getItem('manualUpdateMode') === 'true';
+    setIsManualUpdateMode(manualUpdateMode);
+    
+    // Clear the flag from localStorage
+    if (manualUpdateMode) {
+      localStorage.removeItem('manualUpdateMode');
+    }
+  }, []);
 
   const handleInputChange = (field: keyof QuestionnaireResponse, value: any) => {
     setResponses((prev) => ({ ...prev, [field]: value }));
@@ -166,11 +178,24 @@ const RiskAssessment: React.FC = () => {
       })
     );
 
-    navigate('/portfolio-allocation');
+    // If coming from manual update, return to portfolio allocation
+    if (isManualUpdateMode) {
+      navigate('/portfolio-allocation', { state: { recalculated: true } });
+    } else {
+      navigate('/portfolio-allocation');
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+      {/* Display a message if coming from manual update */}
+      {isManualUpdateMode && (
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 w-full max-w-3xl">
+          <p className="font-bold">Manual Update Mode</p>
+          <p>Answer the questions to recalculate your risk profile and optimize your portfolio allocation.</p>
+        </div>
+      )}
+      
       <AnimatePresence mode="wait">
         <motion.div
           key={currentQuestion.id}
