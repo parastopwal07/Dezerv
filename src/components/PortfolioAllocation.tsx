@@ -54,6 +54,35 @@ interface AllocationSlider {
   color: string;
 }
 
+// Time range selector component
+const TimeRangeSelector: React.FC<{ 
+  value: number, 
+  onChange: (value: number) => void, 
+  options?: number[] 
+}> = ({ 
+  value, 
+  onChange, 
+  options = [0.5, 1, 5, 10] 
+}) => {
+  return (
+    <div className="flex bg-gray-900 p-1 rounded-lg shadow-inner border border-gray-800">
+      {options.map((option) => (
+        <button
+          key={option}
+          onClick={() => onChange(option)}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+            value === option 
+              ? 'bg-indigo-600 text-white shadow-lg transform scale-105' 
+              : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+          }`}
+        >
+          {option === 0.5 ? '6m' : `${option}y`}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const PortfolioAllocation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,6 +112,10 @@ const PortfolioAllocation: React.FC = () => {
   const [historicalReturns, setHistoricalReturns] = useState<HistoricalService.HistoricalReturn[]>([]);
   const [annualizedReturn, setAnnualizedReturn] = useState<number>(0);
   const [volatility, setVolatility] = useState<number>(0);
+
+  // Add time range state variables
+  const [projectionTimeRange, setProjectionTimeRange] = useState<number>(10);
+  const [historicalTimeRange, setHistoricalTimeRange] = useState<number>(5);
 
   useEffect(() => {
     // Check if there's a portfolio risk message in localStorage
@@ -254,7 +287,8 @@ const PortfolioAllocation: React.FC = () => {
   };
 
   const calculateProjectedGrowth = () => {
-    const years = Array.from({ length: 11 }, (_, i) => i);
+    const yearCount = projectionTimeRange;
+    const years = Array.from({ length: yearCount + 1 }, (_, i) => i);
     const projectedValues = years.map(year => {
       let totalValue = initialInvestment;
       allocation.forEach(asset => {
@@ -465,16 +499,15 @@ const PortfolioAllocation: React.FC = () => {
         bodyColor: '#fff',
         callbacks: {
           label: function(context: any) {
-            return `Value: ₹${context.raw.toLocaleString()}`;
+            return `Return: ${context.raw.toFixed(2)}%`;
           }
         }
       }
     },
     scales: {
       y: {
-        beginAtZero: false,
         ticks: {
-          callback: (value: any) => `₹${value.toLocaleString()}`,
+          callback: (value: any) => `${value.toFixed(2)}%`,
           color: '#9ca3af'
         },
         grid: {
@@ -496,14 +529,27 @@ const PortfolioAllocation: React.FC = () => {
 
   // Format historical data for chart
   const getHistoricalChartData = () => {
-    // Display every 3 months to avoid overcrowding x-axis
-    const filteredReturns = historicalReturns.filter((_, index) => index % 3 === 0);
+    // Calculate how many months to include based on selected time range
+    const monthsToInclude = Math.round(historicalTimeRange * 12);
+    
+    // Get the most recent n months of data
+    let dataToShow = [...historicalReturns];
+    if (dataToShow.length > monthsToInclude) {
+      dataToShow = dataToShow.slice(-monthsToInclude);
+    }
+    
+    // Display frequency based on time range to avoid overcrowding
+    const stepSize = historicalTimeRange <= 1 ? 1 : (historicalTimeRange <= 3 ? 2 : 3);
+    const filteredReturns = dataToShow.filter((_, index) => index % stepSize === 0 || index === dataToShow.length - 1);
+    
+    // Calculate percentage returns instead of absolute values
+    const initialValue = filteredReturns[0]?.value || initialInvestment;
     
     return {
       labels: filteredReturns.map(item => item.month),
       datasets: [{
-        label: 'Portfolio Value',
-        data: filteredReturns.map(item => item.value),
+        label: 'Return (%)',
+        data: filteredReturns.map(item => ((item.value - initialValue) / initialValue) * 100),
         borderColor: 'rgb(129, 140, 248)',
         backgroundColor: 'rgba(129, 140, 248, 0.1)',
         fill: true
@@ -743,7 +789,16 @@ const PortfolioAllocation: React.FC = () => {
 
       {/* Add Historical Performance Card before Projected Growth */}
       <div className="dark-card p-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-indigo-300">Historical Performance</h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h3 className="text-lg font-semibold text-indigo-300">Historical Performance</h3>
+          <div className="flex flex-col items-end">
+            <span className="text-sm text-gray-400 mb-2">Select Time Range</span>
+            <TimeRangeSelector 
+              value={historicalTimeRange} 
+              onChange={setHistoricalTimeRange} 
+            />
+          </div>
+        </div>
         
         {historicalReturns.length > 0 ? (
           <>
@@ -769,7 +824,7 @@ const PortfolioAllocation: React.FC = () => {
             </div>
             
             <p className="text-gray-300 mb-4">
-              This chart shows how your current allocation would have performed over the past {(historicalReturns.length / 12).toFixed(1)} years based on historical market data.
+              This chart shows how your current allocation would have performed over the past {historicalTimeRange === 0.5 ? '6 months' : `${historicalTimeRange} years`} based on historical market data.
             </p>
             
             <Line
@@ -790,7 +845,16 @@ const PortfolioAllocation: React.FC = () => {
       </div>
       
       <div className="dark-card p-6">
-        <h3 className="text-lg font-semibold mb-4 text-indigo-300">Projected Growth Over Time</h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h3 className="text-lg font-semibold text-indigo-300">Projected Growth Over Time</h3>
+          <div className="flex flex-col items-end">
+            <span className="text-sm text-gray-400 mb-2">Select Time Range</span>
+            <TimeRangeSelector 
+              value={projectionTimeRange} 
+              onChange={setProjectionTimeRange} 
+            />
+          </div>
+        </div>
         <Line
           data={calculateProjectedGrowth()}
           options={lineChartOptions}
