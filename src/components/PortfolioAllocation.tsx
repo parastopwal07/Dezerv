@@ -217,6 +217,66 @@ const PortfolioAllocation: React.FC = () => {
     return 'bg-red-500';
   };
 
+  // Add a function to handle risk slider change
+  const handleRiskSliderChange = (newScore: number) => {
+    console.log("Risk score changed to:", newScore); // Add logging to debug
+    setRiskScore(newScore);
+    
+    // Set to manual mode when user directly adjusts risk
+    setIsAutoUpdate(false);
+    
+    // Generate a new allocation based on risk score
+    const conservativeAllocation = { stocks: 20, gold: 15, fd: 40, bonds: 20, mutualFunds: 5 };
+    const moderateAllocation = { stocks: 40, gold: 10, fd: 20, bonds: 15, mutualFunds: 15 };
+    const aggressiveAllocation = { stocks: 60, gold: 5, fd: 5, bonds: 10, mutualFunds: 20 };
+    
+    // Apply gradient transitions between allocation profiles based on score position
+    const newAllocation = [...allocation];
+    
+    if (newScore <= 3) {
+      // Gradient between min risk (1) and max conservative (3)
+      const factor = (newScore - 1) / 2; // 0 to 1 scale within conservative range
+      const minRiskAllocation = { stocks: 10, gold: 20, fd: 50, bonds: 20, mutualFunds: 0 };
+      
+      Object.keys(minRiskAllocation).forEach((key, index) => {
+        if (index < newAllocation.length) {
+          const minValue = minRiskAllocation[key as keyof typeof minRiskAllocation];
+          const maxValue = conservativeAllocation[key as keyof typeof conservativeAllocation];
+          newAllocation[index].value = minValue + factor * (maxValue - minValue);
+        }
+      });
+    } else if (newScore <= 6) {
+      // Gradient between conservative (3) and moderate (6)
+      const factor = (newScore - 3) / 3; // 0 to 1 scale within moderate range
+      
+      Object.keys(conservativeAllocation).forEach((key, index) => {
+        if (index < newAllocation.length) {
+          const minValue = conservativeAllocation[key as keyof typeof conservativeAllocation];
+          const maxValue = moderateAllocation[key as keyof typeof moderateAllocation];
+          newAllocation[index].value = minValue + factor * (maxValue - minValue);
+        }
+      });
+    } else {
+      // Gradient between moderate (6) and aggressive (10)
+      const factor = (newScore - 6) / 4; // 0 to 1 scale within aggressive range
+      
+      Object.keys(moderateAllocation).forEach((key, index) => {
+        if (index < newAllocation.length) {
+          const minValue = moderateAllocation[key as keyof typeof moderateAllocation];
+          const maxValue = aggressiveAllocation[key as keyof typeof aggressiveAllocation];
+          newAllocation[index].value = minValue + factor * (maxValue - minValue);
+        }
+      });
+    }
+    
+    // Ensure values are rounded to 1 decimal place for display
+    newAllocation.forEach(item => {
+      item.value = Math.round(item.value * 10) / 10;
+    });
+    
+    setAllocation(newAllocation);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-6">Portfolio Allocation</h2>
@@ -277,14 +337,40 @@ const PortfolioAllocation: React.FC = () => {
           </button>
         </div>
         
-        <div className="flex items-center mb-4">
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className={`h-3 rounded-full ${getRiskScoreColor(riskScore)}`} 
-              style={{width: `${Math.min(100, Math.max(0, (riskScore / 10) * 100))}%`}}
-            ></div>
+        <div className="mb-4">
+          <div className="flex justify-between mb-1">
+            <span className="text-sm text-gray-600">Risk Tolerance</span>
+            <span className="text-sm font-medium">{riskScore.toFixed(1)}/10</span>
           </div>
-          <span className="ml-4 font-bold">{riskScore.toFixed(1)}/10</span>
+          
+          <div className="relative">
+            <div 
+              className="absolute top-0 left-0 h-4 rounded-full pointer-events-none"
+              style={{
+                width: '100%',
+                background: `linear-gradient(to right, 
+                  #10B981 0%, #10B981 30%,
+                  #F59E0B 30%, #F59E0B 60%,
+                  #EF4444 60%, #EF4444 100%)`
+              }}
+            ></div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              step="0.1"
+              value={riskScore}
+              onChange={(e) => handleRiskSliderChange(parseFloat(e.target.value))}
+              className="w-full h-4 appearance-none bg-transparent rounded-full cursor-pointer relative z-10"
+              disabled={isAutoUpdate}
+            />
+          </div>
+          
+          <div className="flex justify-between mt-2 text-xs text-gray-600">
+            <span>Conservative</span>
+            <span>Moderate</span>
+            <span>Aggressive</span>
+          </div>
         </div>
         
         <div className="mb-4">
@@ -324,18 +410,17 @@ const PortfolioAllocation: React.FC = () => {
               <label className="font-medium">{asset.label}</label>
               <span className="text-gray-600">{asset.value.toFixed(1)}%</span>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={asset.value}
-              onChange={(e) => handleSliderChange(index, parseFloat(e.target.value))}
-              className="w-full"
-              style={{
-                background: `linear-gradient(to right, ${asset.color} ${asset.value}%, #e5e7eb ${asset.value}%)`
-              }}
-              disabled={isAutoUpdate}
-            />
+            <div 
+              className="w-full h-3 bg-gray-200 rounded-full overflow-hidden"
+            >
+              <div 
+                className="h-full rounded-full" 
+                style={{
+                  width: `${asset.value}%`,
+                  backgroundColor: asset.color
+                }}
+              ></div>
+            </div>
           </div>
         ))}
 
