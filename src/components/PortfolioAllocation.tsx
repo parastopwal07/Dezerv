@@ -68,6 +68,13 @@ const PortfolioAllocation: React.FC = () => {
   const [showImportedPortfolio, setShowImportedPortfolio] = useState(false);
 
   useEffect(() => {
+    // Check if there's a portfolio risk message in localStorage
+    const portfolioRiskMessage = localStorage.getItem('portfolioRiskMessage');
+    if (portfolioRiskMessage) {
+      setLlmMessage(portfolioRiskMessage);
+      localStorage.removeItem('portfolioRiskMessage'); // Clear it after reading
+    }
+    
     // Calculate risk score (simplified implementation)
     const calculateRiskScore = () => {
       // This is a simplified version just to display the score
