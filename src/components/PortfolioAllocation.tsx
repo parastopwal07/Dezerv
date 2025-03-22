@@ -14,6 +14,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setRiskProfile } from '../store/slices/riskProfileSlice';
+import { getLLMRiskAssessment, getAllocationFromRiskScore } from '../utils/llmService';
 
 ChartJS.register(
   CategoryScale,
@@ -47,7 +48,7 @@ const PortfolioAllocation: React.FC = () => {
   const recalculated = location.state?.recalculated || false;
   const dispatch = useDispatch();
   const riskProfile = useSelector((state: RootState) => state.riskProfile.currentProfile);
-  const userResponses = useSelector((state: RootState) => state.riskProfile.responses || {});
+  // const userResponses = useSelector((state: RootState) => state.riskProfile.responses || {});
   
   const [allocation, setAllocation] = useState<AllocationSlider[]>([
     { label: 'Stocks', key: 'stocks', value: 0, color: 'rgb(59, 130, 246)' },
@@ -56,11 +57,13 @@ const PortfolioAllocation: React.FC = () => {
     { label: 'Bonds', key: 'bonds', value: 0, color: 'rgb(168, 85, 247)' },
     { label: 'Mutual Funds', key: 'mutualFunds', value: 0, color: 'rgb(239, 68, 68)' }
   ]);
-  const [growthRates, setGrowthRates] = useState(DEFAULT_GROWTH_RATES);
+  const [growthRates] = useState(DEFAULT_GROWTH_RATES);
   const [initialInvestment, setInitialInvestment] = useState(100000);
-  const [years, setYears] = useState(10);
+  const [years] = useState(10);
   const [riskScore, setRiskScore] = useState(0);
   const [isAutoUpdate, setIsAutoUpdate] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [llmMessage, setLlmMessage] = useState('');
 
   useEffect(() => {
     // Calculate risk score (simplified implementation)
@@ -99,9 +102,49 @@ const PortfolioAllocation: React.FC = () => {
   };
 
   // Function to handle Auto Update button click
-  const handleAutoUpdate = () => {
-    setIsAutoUpdate(true);
-    updateAllocationFromProfile();
+  const handleAutoUpdate = async () => {
+    setIsLoading(true);
+    setLlmMessage('Analyzing market conditions and your portfolio...');
+    
+    try {
+      // Call the simulated LLM service to get a new risk score
+      const newRiskScore = await getLLMRiskAssessment();
+      setLlmMessage(`Analysis complete! Your risk score has been updated to ${newRiskScore.toFixed(1)}/10`);
+      
+      // Update the risk score state
+      setRiskScore(newRiskScore);
+      
+      // Get the allocation strategy based on the new risk score
+      const newAllocationStrategy = getAllocationFromRiskScore(newRiskScore);
+      
+      // Update the risk profile in the Redux store
+      if (riskProfile) {
+        dispatch(
+          setRiskProfile({
+            ...riskProfile,
+            riskScore: newRiskScore,
+            allocationStrategy: newAllocationStrategy,
+          })
+        );
+      }
+      
+      // Set auto update mode
+      setIsAutoUpdate(true);
+      
+      // Update allocation sliders based on the new risk profile
+      const newAllocation = [...allocation];
+      newAllocation[0].value = newAllocationStrategy.equities * 0.75; // 75% of equities to stocks
+      newAllocation[1].value = newAllocationStrategy.commodities;
+      newAllocation[2].value = newAllocationStrategy.cash;
+      newAllocation[3].value = newAllocationStrategy.bonds;
+      newAllocation[4].value = newAllocationStrategy.equities * 0.25; // 25% of equities to mutual funds
+      setAllocation(newAllocation);
+    } catch (error) {
+      console.error('Error updating risk profile:', error);
+      setLlmMessage('An error occurred while analyzing your portfolio.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Function to handle Manual Update button click
@@ -186,6 +229,20 @@ const PortfolioAllocation: React.FC = () => {
         </div>
       )}
       
+      {/* LLM Analysis Message */}
+      {llmMessage && (
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
+          <p className="font-bold">{isLoading ? 'AI Analysis in Progress' : 'AI Analysis Complete'}</p>
+          <p>{llmMessage}</p>
+          {isLoading && (
+            <div className="mt-2 flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+              <span>Processing...</span>
+            </div>
+          )}
+        </div>
+      )}
+      
       {/* Risk Score Display */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
         <h3 className="text-lg font-semibold mb-4">Your Risk Profile</h3>
@@ -194,20 +251,26 @@ const PortfolioAllocation: React.FC = () => {
         <div className="flex space-x-4 mb-6">
           <button
             onClick={handleAutoUpdate}
+            disabled={isLoading}
             className={`px-4 py-2 rounded-md ${
-              isAutoUpdate 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700'
+              isLoading 
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                : isAutoUpdate 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700'
             }`}
           >
-            Auto Update
+            {isLoading ? 'Analyzing...' : 'Auto Update'}
           </button>
           <button
             onClick={handleManualUpdate}
+            disabled={isLoading}
             className={`px-4 py-2 rounded-md ${
-              !isAutoUpdate 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700'
+              isLoading
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : !isAutoUpdate 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-700'
             }`}
           >
             Manual Update
