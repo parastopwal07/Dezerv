@@ -2,12 +2,16 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { User } from '../../types';
 
 interface UserState {
+  isLoggedIn: boolean;
+  userData: null | { name: string; email: string };
   currentUser: User | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: UserState = {
+  isLoggedIn: false,
+  userData: null,
   currentUser: null,
   loading: false,
   error: null,

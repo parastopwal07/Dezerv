@@ -48,7 +48,7 @@ const PortfolioAllocation: React.FC = () => {
   const recalculated = location.state?.recalculated || false;
   const dispatch = useDispatch();
   const riskProfile = useSelector((state: RootState) => state.riskProfile.currentProfile);
-  // const userResponses = useSelector((state: RootState) => state.riskProfile.responses || {});
+  const portfolio = useSelector((state: RootState) => state.portfolio.currentPortfolio);
   
   const [allocation, setAllocation] = useState<AllocationSlider[]>([
     { label: 'Stocks', key: 'stocks', value: 0, color: 'rgb(59, 130, 246)' },
@@ -65,6 +65,7 @@ const PortfolioAllocation: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [llmMessage, setLlmMessage] = useState('');
   const [isPythonConnected, setIsPythonConnected] = useState(true);
+  const [showImportedPortfolio, setShowImportedPortfolio] = useState(false);
 
   useEffect(() => {
     // Calculate risk score (simplified implementation)
@@ -82,12 +83,43 @@ const PortfolioAllocation: React.FC = () => {
       updateAllocationFromProfile();
     }
     
+    // Set initial investment amount from portfolio if available
+    if (portfolio?.data?.totalValue) {
+      setInitialInvestment(portfolio.data.totalValue);
+      
+      // Check if we've come from portfolio import
+      const hasImportedData = portfolio.data.assets && portfolio.data.assets.length > 0;
+      if (hasImportedData) {
+        setShowImportedPortfolio(true);
+        
+        // Map imported portfolio data to allocation structure
+        const newAllocation = [...allocation];
+        portfolio.data.assets.forEach(asset => {
+          const percentage = (asset.value / portfolio.data.totalValue) * 100;
+          
+          if (asset.type === 'Stocks') {
+            newAllocation[0].value = percentage;
+          } else if (asset.type === 'Gold') {
+            newAllocation[1].value = percentage;
+          } else if (asset.type === 'Fixed Deposit') {
+            newAllocation[2].value = percentage;
+          } else if (asset.type === 'Bonds') {
+            newAllocation[3].value = percentage;
+          } else if (asset.type === 'Mutual Funds') {
+            newAllocation[4].value = percentage;
+          }
+        });
+        
+        setAllocation(newAllocation);
+      }
+    }
+    
     // If returning from a recalculation, show a notification
     if (recalculated) {
       // You could display a success toast or notification here
       console.log('Risk profile successfully recalculated!');
     }
-  }, [riskProfile, isAutoUpdate, recalculated]);
+  }, [riskProfile, isAutoUpdate, recalculated, portfolio]);
 
   // Function to update allocation based on risk profile
   const updateAllocationFromProfile = () => {
@@ -218,7 +250,7 @@ const PortfolioAllocation: React.FC = () => {
 
   // Add a function to handle risk slider change
   const handleRiskSliderChange = (newScore: number) => {
-    console.log("Risk score changed to:", newScore); // Add logging to debug
+    console.log("Risk score changed to:", newScore);
     setRiskScore(newScore);
     
     // Set to manual mode when user directly adjusts risk
@@ -285,6 +317,15 @@ const PortfolioAllocation: React.FC = () => {
         <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
           <p className="font-bold">Profile Updated</p>
           <p>Your risk profile has been recalculated and your portfolio allocation has been updated.</p>
+        </div>
+      )}
+      
+      {/* Add a notification for imported portfolio */}
+      {showImportedPortfolio && (
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
+          <p className="font-bold">Portfolio Imported</p>
+          <p>Your portfolio has been successfully imported. We've used your current asset allocation as a starting point.</p>
+          <p className="mt-2">Total Portfolio Value: ₹{portfolio?.data.totalValue.toLocaleString()}</p>
         </div>
       )}
       

@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
-import PortfolioGraph from './PortfolioGraph.tsx'; // Component to display portfolio breakdown
-import portfolioData from './portfolioData.json';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import PortfolioGraph from './PortfolioGraph.tsx';
+import { setPortfolio } from '../store/slices/portfolioSlice';
+import { RootState } from '../store';
 
 const PortfolioImport: React.FC = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const portfolio = useSelector((state: RootState) => state.portfolio.currentPortfolio);
+  
   const [activeTab, setActiveTab] = useState('platforms');
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ clientId: '', panNumber: '' });
+  const [platformFormData, setFormData] = useState({ clientId: '', panNumber: '' });
   const [showPortfolio, setShowPortfolio] = useState(false);
+  const [customFormData, setCustomFormData] = useState({
+    Stocks: 0,
+    Gold: 0,
+    'Fixed Deposit': 0,
+    Bonds: 0,
+    'Mutual Funds': 0
+  });
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -17,16 +31,81 @@ const PortfolioImport: React.FC = () => {
     setSelectedPlatform(platform);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handlePlatformInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...platformFormData, [e.target.name]: e.target.value });
+  };
+
+  const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    const assetKey = id === 'fd' ? 'Fixed Deposit' : 
+                    id === 'mf' ? 'Mutual Funds' : 
+                    id === 'stocks' ? 'Stocks' :
+                    id === 'gold' ? 'Gold' :
+                    id === 'bonds' ? 'Bonds' : '';
+    
+    if (assetKey) {
+      setCustomFormData({
+        ...customFormData,
+        [assetKey]: parseInt(value) || 0
+      });
+    }
   };
 
   const analyzePortfolio = () => {
+    // Calculate total portfolio value
+    const totalValue = Object.values(customFormData).reduce((sum, value) => sum + value, 0);
+    
+    // Create portfolio assets array
+    const assets = Object.entries(customFormData)
+      .filter(([_, value]) => value > 0) // Only include assets with values > 0
+      .map(([type, value]) => ({
+        type,
+        value,
+        percentage: totalValue > 0 ? (value / totalValue) * 100 : 0
+      }));
+    
+    // Dispatch to Redux store
+    dispatch(setPortfolio({
+      id: crypto.randomUUID(),
+      userId: 'temp-user-id',
+      data: {
+        assets,
+        totalValue
+      },
+      importedAt: new Date().toISOString()
+    }));
+    
     setShowPortfolio(true);
   };
 
-  if (showPortfolio) {
-    return <PortfolioGraph data={portfolioData} />;
+  if (showPortfolio && portfolio) {
+    // Convert portfolio data structure to format expected by PortfolioGraph
+    const graphData: Record<string, number> = {};
+    portfolio.data.assets.forEach(asset => {
+      graphData[asset.type] = asset.value;
+    });
+    
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-center mb-4">Portfolio Analysis</h2>
+          <PortfolioGraph data={graphData} />
+          
+          <div className="mt-8 bg-blue-50 p-4 rounded-lg">
+            <p className="text-lg font-medium text-blue-800 mb-2">Next Steps</p>
+            <p className="text-blue-700 mb-4">
+              Now that we've analyzed your current portfolio, let's see how it aligns with your risk profile and optimize it for better returns.
+            </p>
+            <button 
+              onClick={() => navigate('/portfolio-allocation')} 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg transition w-full"
+            >
+              View Optimized Portfolio Allocation
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -125,8 +204,8 @@ const PortfolioImport: React.FC = () => {
                     id="clientId"
                     name="clientId"
                     type="text"
-                    value={formData.clientId}
-                    onChange={handleInputChange}
+                    value={platformFormData.clientId}
+                    onChange={handlePlatformInputChange}
                     className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="Enter Client ID"
                   />
@@ -138,8 +217,8 @@ const PortfolioImport: React.FC = () => {
                     id="panNumber"
                     name="panNumber"
                     type="text"
-                    value={formData.panNumber}
-                    onChange={handleInputChange}
+                    value={platformFormData.panNumber}
+                    onChange={handlePlatformInputChange}
                     className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="Enter PAN Number"
                   />
@@ -173,6 +252,8 @@ const PortfolioImport: React.FC = () => {
                       <input
                         id="stocks"
                         type="number"
+                        value={customFormData.Stocks || ''}
+                        onChange={handleCustomInputChange}
                         className="pl-8 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Amount invested"
                       />
@@ -188,6 +269,8 @@ const PortfolioImport: React.FC = () => {
                       <input
                         id="gold"
                         type="number"
+                        value={customFormData.Gold || ''}
+                        onChange={handleCustomInputChange}
                         className="pl-8 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Amount invested"
                       />
@@ -203,6 +286,8 @@ const PortfolioImport: React.FC = () => {
                       <input
                         id="fd"
                         type="number"
+                        value={customFormData['Fixed Deposit'] || ''}
+                        onChange={handleCustomInputChange}
                         className="pl-8 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Amount invested"
                       />
@@ -220,6 +305,8 @@ const PortfolioImport: React.FC = () => {
                       <input
                         id="bonds"
                         type="number"
+                        value={customFormData.Bonds || ''}
+                        onChange={handleCustomInputChange}
                         className="pl-8 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Amount invested"
                       />
@@ -235,25 +322,19 @@ const PortfolioImport: React.FC = () => {
                       <input
                         id="mf"
                         type="number"
+                        value={customFormData['Mutual Funds'] || ''}
+                        onChange={handleCustomInputChange}
                         className="pl-8 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Amount invested"
                       />
                     </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="others" className="block text-sm font-medium text-gray-700">Other Investments</label>
-                    <div className="relative mt-1">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500">₹</span>
-                      </div>
-                      <input
-                        id="others"
-                        type="number"
-                        className="pl-8 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Amount invested"
-                      />
-                    </div>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600 font-medium">Total Portfolio Value</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      ₹{Object.values(customFormData).reduce((sum, value) => sum + value, 0).toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </div>
