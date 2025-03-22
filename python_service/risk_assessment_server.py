@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 import random
 import time
@@ -6,6 +6,7 @@ import uvicorn
 import json
 import re
 from llm_processor import LLMProcessor
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -76,6 +77,80 @@ async def get_risk_assessment(risk_score: float = Query(None)):
     # Return a JSON response with the risk score and reason
     return {
         "riskScore": round(new_risk_score, 1),
+        "message": reason
+    }
+
+# Define a model for portfolio data
+class PortfolioData(BaseModel):
+    stocks: float
+    gold: float
+    fixedDeposit: float
+    bonds: float
+    mutualFunds: float
+    totalValue: float
+
+@app.post("/api/portfolio-risk-assessment")
+async def analyze_portfolio(portfolio: PortfolioData):
+    # Simulate processing time
+    time.sleep(1.5)
+    
+    print(f"Received portfolio data: {portfolio}")
+    
+    # Calculate percentages for each asset type
+    total = portfolio.totalValue
+    percentages = {
+        "stocks": (portfolio.stocks / total) * 100 if total > 0 else 0,
+        "gold": (portfolio.gold / total) * 100 if total > 0 else 0,
+        "fixedDeposit": (portfolio.fixedDeposit / total) * 100 if total > 0 else 0,
+        "bonds": (portfolio.bonds / total) * 100 if total > 0 else 0,
+        "mutualFunds": (portfolio.mutualFunds / total) * 100 if total > 0 else 0
+    }
+    
+    # Read user data for context
+    with open('user_data.txt', 'r') as file:
+        user_data = file.read()
+    
+    prompt = f'''
+    Pretend that you are a financial advisor robot. Based on the portfolio allocation below, 
+    assess the risk level of this portfolio on a scale of 1 to 10, with 1 decimal point precision.
+    
+    Portfolio allocation:
+    - Stocks: {percentages["stocks"]:.1f}%
+    - Gold: {percentages["gold"]:.1f}%
+    - Fixed Deposits: {percentages["fixedDeposit"]:.1f}%
+    - Bonds: {percentages["bonds"]:.1f}%
+    - Mutual Funds: {percentages["mutualFunds"]:.1f}%
+    
+    Total portfolio value: ₹{portfolio.totalValue}
+    
+    Additional context:
+    {user_data}
+    
+    Only return a response in JSON format with keys: risk_score and reason
+    '''
+    
+    raw_response = my_llm.get_response(prompt)
+    print(raw_response)
+    
+    # Parse the LLM response
+    response_data = extract_json_from_text(raw_response)
+    
+    if response_data and 'risk_score' in response_data and 'reason' in response_data:
+        risk_score = float(response_data['risk_score'])
+        reason = response_data['reason']
+    else:
+        # Fallback if parsing fails - generate a score based on asset allocation
+        # Higher equity (stocks+mutual funds) generally means higher risk
+        equity_percentage = percentages["stocks"] + percentages["mutualFunds"]
+        bond_percentage = percentages["bonds"]
+        safe_assets = percentages["fixedDeposit"] + percentages["gold"]
+        
+        # Simple formula: more equity = higher risk, more safe assets = lower risk
+        risk_score = min(10, max(1, (equity_percentage * 0.1) + (bond_percentage * 0.05) - (safe_assets * 0.02) + 3))
+        reason = "Based on your portfolio allocation, particularly the balance between equity and safer assets."
+    
+    return {
+        "riskScore": round(risk_score, 1),
         "message": reason
     }
 
