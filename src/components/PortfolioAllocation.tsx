@@ -70,13 +70,14 @@ const PortfolioAllocation: React.FC = () => {
   ]);
   const [growthRates] = useState(DEFAULT_GROWTH_RATES);
   const [initialInvestment, setInitialInvestment] = useState(100000);
-  const [years] = useState(10);
+  const [timeRange, setTimeRange] = useState(10);
   const [riskScore, setRiskScore] = useState(0);
   const [isAutoUpdate, setIsAutoUpdate] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [llmMessage, setLlmMessage] = useState('');
   const [isPythonConnected, setIsPythonConnected] = useState(true);
   const [showImportedPortfolio, setShowImportedPortfolio] = useState(false);
+  const [historicalYears, setHistoricalYears] = useState(3);
 
   useEffect(() => {
     // Check if there's a portfolio risk message in localStorage
@@ -248,7 +249,7 @@ const PortfolioAllocation: React.FC = () => {
   };
 
   const calculateProjectedGrowth = () => {
-    const years = Array.from({ length: 11 }, (_, i) => i);
+    const years = Array.from({ length: timeRange + 1 }, (_, i) => i);
     const projectedValues = years.map(year => {
       let totalValue = initialInvestment;
       allocation.forEach(asset => {
@@ -269,6 +270,32 @@ const PortfolioAllocation: React.FC = () => {
         fill: true
       }]
     };
+  };
+  
+  // Calculate annual return and volatility based on the allocation and time range
+  const calculatePerformanceMetrics = () => {
+    // Calculate weighted annual return
+    let annualReturn = 0;
+    allocation.forEach(asset => {
+      annualReturn += (asset.value / 100) * growthRates[asset.key];
+    });
+    
+    // Simple volatility calculation (higher equity = higher volatility)
+    const equityPercentage = allocation[0].value + allocation[4].value; // Stocks + Mutual Funds
+    const volatility = (equityPercentage * 0.2) / timeRange + 
+                       (allocation[1].value * 0.15) / timeRange + // Gold
+                       (allocation[3].value * 0.1) / timeRange;   // Bonds
+    
+    return {
+      annualReturn: (annualReturn * 100).toFixed(2),
+      volatility: volatility.toFixed(2)
+    };
+  };
+  
+  // Calculate final projected value
+  const getProjectedValue = () => {
+    const projectedData = calculateProjectedGrowth();
+    return projectedData.datasets[0].data[projectedData.datasets[0].data.length - 1];
   };
 
   // Function to get risk category based on score
@@ -409,6 +436,144 @@ const PortfolioAllocation: React.FC = () => {
       },
       x: {
         ticks: {
+          color: '#9ca3af'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      }
+    }
+  };
+
+  // Generate simulated historical performance data based on the current allocation
+  const generateHistoricalData = () => {
+    // Create monthly data points for the selected number of years
+    const totalMonths = historicalYears * 12;
+    const labels = Array.from({ length: totalMonths + 1 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (totalMonths - i));
+      return `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+    });
+    
+    // Start with initial investment
+    let baseValue = initialInvestment;
+    
+    // Calculate weighted monthly return based on asset allocation
+    let weightedMonthlyReturn = 0;
+    allocation.forEach(asset => {
+      // Convert annual return to monthly return
+      const monthlyReturn = Math.pow(1 + growthRates[asset.key], 1/12) - 1;
+      weightedMonthlyReturn += (asset.value / 100) * monthlyReturn;
+    });
+    
+    // Generate values with some randomness to simulate market volatility
+    const values = [baseValue];
+    
+    // Calculate volatility factor based on allocation
+    const equityPercentage = allocation[0].value + allocation[4].value; // Stocks + Mutual Funds
+    const volatilityFactor = (equityPercentage * 0.015) + 0.005; // Higher equity = higher volatility
+    
+    for (let i = 1; i <= totalMonths; i++) {
+      // Add randomness based on volatility
+      const randomFactor = 1 + (Math.random() * 2 - 1) * volatilityFactor;
+      // Apply monthly return + randomness
+      baseValue = baseValue * (1 + weightedMonthlyReturn * randomFactor);
+      
+      // Add some market corrections/jumps for realism (5% chance of significant move)
+      if (Math.random() < 0.05) {
+        const marketEvent = (Math.random() > 0.5 ? 1 : -1) * Math.random() * 0.1;
+        baseValue = baseValue * (1 + marketEvent);
+      }
+      
+      values.push(Math.round(baseValue));
+    }
+    
+    return {
+      labels,
+      datasets: [{
+        label: 'Portfolio Value',
+        data: values,
+        borderColor: 'rgb(99, 102, 241)',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        fill: true,
+        tension: 0.2 // Add some curve to the line
+      }]
+    };
+  };
+  
+  // Calculate historical performance metrics
+  const calculateHistoricalMetrics = () => {
+    const historicalData = generateHistoricalData();
+    const values = historicalData.datasets[0].data;
+    
+    // Calculate total return
+    const startValue = values[0];
+    const endValue = values[values.length - 1];
+    const totalReturn = ((endValue - startValue) / startValue) * 100;
+    
+    // Calculate annualized return
+    const annualizedReturn = (Math.pow(endValue / startValue, 1/historicalYears) - 1) * 100;
+    
+    // Calculate max drawdown
+    let maxDrawdown = 0;
+    let peak = values[0];
+    
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] > peak) {
+        peak = values[i];
+      } else {
+        const drawdown = (peak - values[i]) / peak * 100;
+        if (drawdown > maxDrawdown) {
+          maxDrawdown = drawdown;
+        }
+      }
+    }
+    
+    return {
+      totalReturn: totalReturn.toFixed(2),
+      annualizedReturn: annualizedReturn.toFixed(2),
+      maxDrawdown: maxDrawdown.toFixed(2)
+    };
+  };
+
+  // Historical chart options
+  const historicalChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          color: '#f3f4f6'
+        }
+      },
+      title: {
+        display: true,
+        text: 'Simulated Historical Performance',
+        color: '#f3f4f6'
+      },
+      tooltip: {
+        backgroundColor: '#333',
+        titleColor: '#fff',
+        bodyColor: '#fff'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        ticks: {
+          callback: (value: any) => `₹${value.toLocaleString()}`,
+          color: '#9ca3af'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      },
+      x: {
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45,
+          autoSkip: true,
+          maxTicksLimit: 12,
           color: '#9ca3af'
         },
         grid: {
@@ -648,12 +813,113 @@ const PortfolioAllocation: React.FC = () => {
         </div>
       </div>
 
+      <div className="dark-card p-6 mb-8">
+        <h3 className="text-lg font-semibold mb-4 text-indigo-300">Historical Performance</h3>
+        
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center">
+            <label htmlFor="historicalYears" className="text-gray-300 mr-2">Time Period:</label>
+            <select 
+              id="historicalYears"
+              value={historicalYears}
+              onChange={(e) => setHistoricalYears(parseInt(e.target.value))}
+              className="bg-gray-800 text-gray-200 rounded border border-gray-700 px-3 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {[1, 3, 5, 10].map(year => (
+                <option key={year} value={year}>{year} {year === 1 ? 'year' : 'years'}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex space-x-4">
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Total Return</p>
+              <p className={`text-lg font-semibold ${
+                parseFloat(calculateHistoricalMetrics().totalReturn) >= 0 
+                  ? 'text-green-400' 
+                  : 'text-red-400'
+              }`}>
+                {parseFloat(calculateHistoricalMetrics().totalReturn) >= 0 ? '+' : ''}
+                {calculateHistoricalMetrics().totalReturn}%
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Annualized</p>
+              <p className={`text-lg font-semibold ${
+                parseFloat(calculateHistoricalMetrics().annualizedReturn) >= 0 
+                  ? 'text-green-400' 
+                  : 'text-red-400'
+              }`}>
+                {parseFloat(calculateHistoricalMetrics().annualizedReturn) >= 0 ? '+' : ''}
+                {calculateHistoricalMetrics().annualizedReturn}%
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Max Drawdown</p>
+              <p className="text-lg font-semibold text-red-400">
+                -{calculateHistoricalMetrics().maxDrawdown}%
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mb-4">
+          <Line
+            data={generateHistoricalData()}
+            options={historicalChartOptions}
+          />
+        </div>
+        
+        <div className="mt-4 text-center text-xs text-gray-400">
+          <p>This is a simulated historical performance based on your current allocation. Past performance is not indicative of future results.</p>
+        </div>
+      </div>
+      
       <div className="dark-card p-6">
         <h3 className="text-lg font-semibold mb-4 text-indigo-300">Projected Growth Over Time</h3>
+        
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center">
+            <label htmlFor="timeRange" className="text-gray-300 mr-2">Time Horizon:</label>
+            <select 
+              id="timeRange"
+              value={timeRange}
+              onChange={(e) => setTimeRange(parseInt(e.target.value))}
+              className="bg-gray-800 text-gray-200 rounded border border-gray-700 px-3 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {[5, 10, 15, 20, 25, 30].map(year => (
+                <option key={year} value={year}>{year} years</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex space-x-6">
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Annual Return</p>
+              <p className="text-lg font-semibold text-green-400">{calculatePerformanceMetrics().annualReturn}%</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Volatility</p>
+              <p className="text-lg font-semibold text-yellow-400">{calculatePerformanceMetrics().volatility}%</p>
+            </div>
+          </div>
+        </div>
+        
         <Line
           data={calculateProjectedGrowth()}
           options={lineChartOptions}
         />
+        
+        <div className="mt-6 grid grid-cols-2 gap-4 text-center">
+          <div className="bg-opacity-20 bg-indigo-900 p-4 rounded border border-indigo-800">
+            <p className="text-xs text-gray-400">Initial Investment</p>
+            <p className="text-lg font-semibold text-indigo-300">₹{initialInvestment.toLocaleString()}</p>
+          </div>
+          <div className="bg-opacity-20 bg-green-900 p-4 rounded border border-green-800">
+            <p className="text-xs text-gray-400">Projected Value ({timeRange} years)</p>
+            <p className="text-lg font-semibold text-green-400">₹{getProjectedValue().toLocaleString()}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
