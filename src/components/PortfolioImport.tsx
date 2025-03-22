@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import PortfolioGraph from './PortfolioGraph.tsx';
 import { setPortfolio } from '../store/slices/portfolioSlice';
+import { getPortfolioRiskAssessment } from '../utils/llmService';
+import { setRiskProfile } from '../store/slices/riskProfileSlice';
 import { RootState } from '../store';
 import { DollarSign, CreditCard, Upload } from 'lucide-react';
 
@@ -22,6 +24,13 @@ const PortfolioImport: React.FC = () => {
     Bonds: 0,
     'Mutual Funds': 0
   });
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Add state to store risk assessment result
+  const [riskAssessment, setRiskAssessment] = useState<{
+    riskScore: number;
+    message: string;
+  } | null>(null);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -52,7 +61,9 @@ const PortfolioImport: React.FC = () => {
     }
   };
 
-  const analyzePortfolio = () => {
+  const analyzePortfolio = async () => {
+    setIsAnalyzing(true);
+    
     // Calculate total portfolio value
     const totalValue = Object.values(customFormData).reduce((sum, value) => sum + value, 0);
     
@@ -76,7 +87,59 @@ const PortfolioImport: React.FC = () => {
       importedAt: new Date().toISOString()
     }));
     
-    setShowPortfolio(true);
+    // Send data to LLM for risk assessment
+    try {
+      const portfolioData = {
+        stocks: customFormData['Stocks'],
+        gold: customFormData['Gold'],
+        fixedDeposit: customFormData['Fixed Deposit'],
+        bonds: customFormData['Bonds'],
+        mutualFunds: customFormData['Mutual Funds'],
+        totalValue
+      };
+      
+      // Call the LLM service to get a risk assessment
+      const result = await getPortfolioRiskAssessment(portfolioData);
+      
+      // Store the risk assessment in state
+      setRiskAssessment(result);
+      
+      // Update the risk profile in Redux
+      dispatch(setRiskProfile({
+        id: crypto.randomUUID(),
+        userId: 'temp-user-id',
+        riskScore: result.riskScore,
+        allocationStrategy: {
+          equities: (portfolioData.stocks + portfolioData.mutualFunds) / totalValue * 100,
+          bonds: portfolioData.bonds / totalValue * 100,
+          commodities: portfolioData.gold / totalValue * 100,
+          realEstate: 0,
+          cash: portfolioData.fixedDeposit / totalValue * 100
+        },
+        questionnaireResponses: {
+          ageGroup: '',
+          monthlyIncome: '',
+          savingsPercentage: '',
+          loans: [],
+          investmentExperience: '',
+          riskTolerance: '',
+          marketDropReaction: '',
+          investmentInterests: [],
+          primaryGoal: '',
+          timeHorizon: '',
+          emergencyFund: ''
+        },
+        createdAt: new Date().toISOString()
+      }));
+      
+      // Still store in localStorage for the allocation page
+      localStorage.setItem('portfolioRiskMessage', result.message);
+    } catch (error) {
+      console.error('Error during portfolio risk assessment:', error);
+    } finally {
+      setIsAnalyzing(false);
+      setShowPortfolio(true);
+    }
   };
 
   if (showPortfolio && portfolio) {
@@ -86,11 +149,57 @@ const PortfolioImport: React.FC = () => {
       graphData[asset.type] = asset.value;
     });
     
+    // Get risk color based on score
+    const getRiskColor = (score: number) => {
+      if (score <= 3.5) return 'bg-green-100 text-green-800 border-green-300';
+      if (score <= 7) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      return 'bg-red-100 text-red-800 border-red-300';
+    };
+    
+    // Get risk category based on score
+    const getRiskCategory = (score: number) => {
+      if (score <= 3.5) return 'Conservative';
+      if (score <= 7) return 'Moderate';
+      return 'Aggressive';
+    };
+    
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="dark-card p-6 mb-6">
-          <h2 className="text-xl font-semibold text-center mb-4 text-indigo-300">Portfolio Analysis</h2>
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-center mb-4">Portfolio Analysis</h2>
           <PortfolioGraph data={graphData} />
+          
+          {/* Display Risk Assessment */}
+          {riskAssessment && (
+            <div className="mt-6 p-4 rounded-lg border-2 border-dashed bg-blue-50">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-800">Risk Assessment</h3>
+                <div className={`px-3 py-1 rounded-full text-sm font-medium ${getRiskColor(riskAssessment.riskScore)}`}>
+                  {getRiskCategory(riskAssessment.riskScore)}
+                </div>
+              </div>
+              
+              <div className="flex items-center mb-4">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold mr-4 bg-indigo-100 text-indigo-800">
+                  {riskAssessment.riskScore.toFixed(1)}
+                </div>
+                <div className="flex-1">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="h-2.5 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500" 
+                      style={{ width: `${(riskAssessment.riskScore / 10) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Low Risk (1)</span>
+                    <span>High Risk (10)</span>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-gray-700">{riskAssessment.message}</p>
+            </div>
+          )}
           
           <div className="mt-8 bg-indigo-900 bg-opacity-30 border border-indigo-800 p-4 rounded-lg">
             <p className="text-lg font-medium text-indigo-300 mb-2">Next Steps</p>
@@ -337,10 +446,21 @@ const PortfolioImport: React.FC = () => {
         {/* Footer with Action Button */}
         <div className="flex justify-end p-6 pt-0 border-t border-[#333333] mt-6">
           <button 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg transition font-medium"
             onClick={analyzePortfolio}
+            disabled={isAnalyzing}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg transition font-medium flex items-center"
           >
-            Analyze Portfolio
+            {isAnalyzing ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Analyzing...
+              </>
+            ) : (
+              'Analyze Portfolio'
+            )}
           </button>
         </div>
       </div>

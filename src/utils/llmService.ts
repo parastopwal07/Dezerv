@@ -52,6 +52,52 @@ export async function getLLMRiskAssessment(currentRiskScore?: number): Promise<{
 }
 
 /**
+ * Send portfolio data to the Python backend for risk assessment
+ * @param portfolioData The user's portfolio allocation data
+ * @returns A promise that resolves to a risk score and explanation
+ */
+export async function getPortfolioRiskAssessment(portfolioData: {
+  stocks: number,
+  gold: number,
+  fixedDeposit: number,
+  bonds: number,
+  mutualFunds: number,
+  totalValue: number
+}): Promise<{ riskScore: number; message: string }> {
+  try {
+    console.log('Calling Python backend for portfolio risk assessment...');
+    
+    const response = await fetch(`${PYTHON_API_URL}/api/portfolio-risk-assessment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(portfolioData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Portfolio risk assessment response:', data);
+    
+    return {
+      riskScore: data.riskScore,
+      message: data.message
+    };
+  } catch (error) {
+    console.error('Error calling portfolio risk assessment service:', error);
+    
+    // Fallback to a random score if the API call fails
+    return {
+      riskScore: Math.floor(Math.random() * 10) + 1,
+      message: 'Could not connect to AI service. Using fallback portfolio risk assessment.'
+    };
+  }
+}
+
+/**
  * Gets the recommended portfolio allocation based on a risk score
  * @param riskScore The risk score (1-10)
  * @returns An object with recommended allocation percentages
