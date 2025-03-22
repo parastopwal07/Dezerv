@@ -41,6 +41,8 @@ interface AllocationSlider {
 
 const PortfolioAllocation: React.FC = () => {
   const riskProfile = useSelector((state: RootState) => state.riskProfile.currentProfile);
+  const userResponses = useSelector((state: RootState) => state.riskProfile.responses || {});
+  
   const [allocation, setAllocation] = useState<AllocationSlider[]>([
     { label: 'Stocks', key: 'stocks', value: 0, color: 'rgb(59, 130, 246)' },
     { label: 'Gold', key: 'gold', value: 0, color: 'rgb(234, 179, 8)' },
@@ -51,8 +53,19 @@ const PortfolioAllocation: React.FC = () => {
   const [growthRates, setGrowthRates] = useState(DEFAULT_GROWTH_RATES);
   const [initialInvestment, setInitialInvestment] = useState(100000);
   const [years, setYears] = useState(10);
+  const [riskScore, setRiskScore] = useState(0);
 
   useEffect(() => {
+    // Calculate risk score (simplified implementation)
+    const calculateRiskScore = () => {
+      // This is a simplified version just to display the score
+      // In a real implementation, you would use the full calculation from your Python code
+      const defaultScore = riskProfile?.riskScore || 5.5;
+      setRiskScore(defaultScore);
+    };
+    
+    calculateRiskScore();
+    
     if (riskProfile?.allocationStrategy) {
       const newAllocation = [...allocation];
       newAllocation[0].value = riskProfile.allocationStrategy.equities * 0.75; // 75% of equities to stocks
@@ -109,9 +122,65 @@ const PortfolioAllocation: React.FC = () => {
     };
   };
 
+  // Function to get risk category based on score
+  const getRiskCategory = (score: number) => {
+    if (score <= 3) return 'Conservative';
+    if (score <= 6) return 'Moderate';
+    return 'Aggressive';
+  };
+
+  // Function to get color for risk score display
+  const getRiskScoreColor = (score: number) => {
+    if (score <= 3) return 'bg-green-500';
+    if (score <= 6) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-6">Suggested Portfolio Allocation</h2>
+      <h2 className="text-2xl font-bold mb-6">Portfolio Allocation</h2>
+      
+      {/* Risk Score Display */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h3 className="text-lg font-semibold mb-4">Your Risk Profile</h3>
+        
+        <div className="flex items-center mb-4">
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              className={`h-3 rounded-full ${getRiskScoreColor(riskScore)}`} 
+              style={{width: `${Math.min(100, Math.max(0, (riskScore / 10) * 100))}%`}}
+            ></div>
+          </div>
+          <span className="ml-4 font-bold">{riskScore.toFixed(1)}/10</span>
+        </div>
+        
+        <div className="mb-4">
+          <h4 className="font-bold text-lg">{getRiskCategory(riskScore)} Investor</h4>
+          <p className="text-gray-700">
+            {riskScore <= 3 
+              ? 'Focus on capital preservation with minimal risk. Suitable for short-term goals.'
+              : riskScore <= 6 
+                ? 'Balanced approach with moderate risk for steady growth. Suitable for medium-term goals.'
+                : 'Growth-oriented strategy with higher risk for potentially higher returns. Suitable for long-term goals.'
+            }
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="bg-green-100 p-2 rounded">
+            <p className="font-medium">Conservative</p>
+            <p className="text-sm text-gray-600">1-3</p>
+          </div>
+          <div className="bg-yellow-100 p-2 rounded">
+            <p className="font-medium">Moderate</p>
+            <p className="text-sm text-gray-600">4-6</p>
+          </div>
+          <div className="bg-red-100 p-2 rounded">
+            <p className="font-medium">Aggressive</p>
+            <p className="text-sm text-gray-600">7-10</p>
+          </div>
+        </div>
+      </div>
       
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
         <h3 className="text-lg font-semibold mb-4">Customize Your Allocation</h3>
