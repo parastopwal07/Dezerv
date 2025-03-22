@@ -108,16 +108,13 @@ const PortfolioAllocation: React.FC = () => {
     setLlmMessage('Analyzing market conditions and your portfolio with AI...');
     
     try {
-      // Call the Python backend to get a new risk score, passing the current score
-      const newRiskScore = await getLLMRiskAssessment(riskScore);
-      setLlmMessage(`Analysis complete! Your risk score has been updated to ${newRiskScore.toFixed(1)}/10 by our AI model`);
+      // Call the Python backend to get a new risk score and message
+      const { riskScore: newRiskScore, message } = await getLLMRiskAssessment(riskScore);
+      setLlmMessage(message); // Use the message returned from the backend
       setIsPythonConnected(true);
       
       // Update the risk score state
       setRiskScore(newRiskScore);
-      
-      // Get the allocation strategy based on the new risk score
-      const newAllocationStrategy = getAllocationFromRiskScore(newRiskScore);
       
       // Update the risk profile in the Redux store
       if (riskProfile) {
@@ -125,21 +122,20 @@ const PortfolioAllocation: React.FC = () => {
           setRiskProfile({
             ...riskProfile,
             riskScore: newRiskScore,
-            allocationStrategy: newAllocationStrategy,
+            allocationStrategy: getAllocationFromRiskScore(newRiskScore),
           })
         );
       }
       
-      // Set auto update mode
       setIsAutoUpdate(true);
       
-      // Update allocation sliders based on the new risk profile
+      const newAllocationStrategy = getAllocationFromRiskScore(newRiskScore);
       const newAllocation = [...allocation];
-      newAllocation[0].value = newAllocationStrategy.equities * 0.75; // 75% of equities to stocks
+      newAllocation[0].value = newAllocationStrategy.equities * 0.75;
       newAllocation[1].value = newAllocationStrategy.commodities;
       newAllocation[2].value = newAllocationStrategy.cash;
       newAllocation[3].value = newAllocationStrategy.bonds;
-      newAllocation[4].value = newAllocationStrategy.equities * 0.25; // 25% of equities to mutual funds
+      newAllocation[4].value = newAllocationStrategy.equities * 0.25;
       setAllocation(newAllocation);
     } catch (error) {
       console.error('Error updating risk profile:', error);

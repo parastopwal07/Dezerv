@@ -11,9 +11,9 @@ const PYTHON_API_URL = 'http://localhost:8080';
 /**
  * Communicates with the Python backend to get a risk assessment
  * @param currentRiskScore The current risk score to send to the backend
- * @returns A promise that resolves to a risk score between 1-10
+ * @returns A promise that resolves to a risk score between 1-10 and explanation message
  */
-export async function getLLMRiskAssessment(currentRiskScore?: number): Promise<number> {
+export async function getLLMRiskAssessment(currentRiskScore?: number): Promise<{ riskScore: number; message: string }> {
   try {
     console.log('Calling Python backend for risk assessment...');
     
@@ -32,13 +32,22 @@ export async function getLLMRiskAssessment(currentRiskScore?: number): Promise<n
     const data = await response.json();
     console.log('Python backend response:', data);
     
-    return data.riskScore;
+    // Extract and log the message from the response
+    console.log('Message from Python backend:', data.message);
+    
+    return {
+      riskScore: data.riskScore,
+      message: data.message
+    };
   } catch (error) {
     console.error('Error calling Python risk assessment service:', error);
     
     // Fallback to a random score if the API call fails
     console.warn('Falling back to local random risk score generation');
-    return Math.floor(Math.random() * 10) + 1;
+    return {
+      riskScore: Math.floor(Math.random() * 10) + 1,
+      message: 'Could not connect to AI service. Using fallback random score.'
+    };
   }
 }
 
