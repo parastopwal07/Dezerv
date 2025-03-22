@@ -37,6 +37,15 @@ const DEFAULT_GROWTH_RATES = {
   mutualFunds: 0.10 // 10% annual return
 };
 
+// Update colors for the dark theme
+const DARK_THEME_COLORS = [
+  'rgb(99, 102, 241)', // Indigo
+  'rgb(234, 179, 8)',  // Yellow/Gold
+  'rgb(34, 197, 94)',  // Green
+  'rgb(168, 85, 247)', // Purple
+  'rgb(239, 68, 68)'   // Red
+];
+
 interface AllocationSlider {
   label: string;
   key: keyof typeof DEFAULT_GROWTH_RATES;
@@ -53,11 +62,11 @@ const PortfolioAllocation: React.FC = () => {
   const portfolio = useSelector((state: RootState) => state.portfolio.currentPortfolio);
   
   const [allocation, setAllocation] = useState<AllocationSlider[]>([
-    { label: 'Stocks', key: 'stocks', value: 0, color: 'rgb(59, 130, 246)' },
-    { label: 'Gold', key: 'gold', value: 0, color: 'rgb(234, 179, 8)' },
-    { label: 'Fixed Deposits', key: 'fd', value: 0, color: 'rgb(34, 197, 94)' },
-    { label: 'Bonds', key: 'bonds', value: 0, color: 'rgb(168, 85, 247)' },
-    { label: 'Mutual Funds', key: 'mutualFunds', value: 0, color: 'rgb(239, 68, 68)' }
+    { label: 'Stocks', key: 'stocks', value: 0, color: DARK_THEME_COLORS[0] },
+    { label: 'Gold', key: 'gold', value: 0, color: DARK_THEME_COLORS[1] },
+    { label: 'Fixed Deposits', key: 'fd', value: 0, color: DARK_THEME_COLORS[2] },
+    { label: 'Bonds', key: 'bonds', value: 0, color: DARK_THEME_COLORS[3] },
+    { label: 'Mutual Funds', key: 'mutualFunds', value: 0, color: DARK_THEME_COLORS[4] }
   ]);
   const [growthRates] = useState(DEFAULT_GROWTH_RATES);
   const [initialInvestment, setInitialInvestment] = useState(100000);
@@ -329,13 +338,86 @@ const PortfolioAllocation: React.FC = () => {
     setAllocation(newAllocation);
   };
 
+  // Update the chart options for dark theme
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          color: '#f3f4f6', // Light text for dark background
+          boxWidth: 12,
+          font: {
+            size: 11
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const value = context.raw as number;
+            return `${context.label}: ${value.toFixed(1)}%`;
+          }
+        },
+        backgroundColor: '#333',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#555',
+        borderWidth: 1
+      }
+    }
+  };
+
+  // Line chart options
+  const lineChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          color: '#f3f4f6'
+        }
+      },
+      title: {
+        display: true,
+        text: 'Portfolio Value Projection',
+        color: '#f3f4f6'
+      },
+      tooltip: {
+        backgroundColor: '#333',
+        titleColor: '#fff',
+        bodyColor: '#fff'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => `₹${value.toLocaleString()}`,
+          color: '#9ca3af'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      },
+      x: {
+        ticks: {
+          color: '#9ca3af'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      }
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-6">Portfolio Allocation</h2>
+      <h2 className="text-2xl font-bold mb-6 text-indigo-300">Portfolio Allocation</h2>
       
       {/* Add a notification for recalculation */}
       {recalculated && (
-        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
+        <div className="bg-indigo-900 border-l-4 border-indigo-500 text-indigo-100 p-4 mb-6">
           <p className="font-bold">Profile Updated</p>
           <p>Your risk profile has been recalculated and your portfolio allocation has been updated.</p>
         </div>
@@ -343,7 +425,7 @@ const PortfolioAllocation: React.FC = () => {
       
       {/* Add a notification for imported portfolio */}
       {showImportedPortfolio && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
+        <div className="bg-indigo-900 border-l-4 border-indigo-500 text-indigo-100 p-4 mb-6">
           <p className="font-bold">Portfolio Imported</p>
           <p>Your portfolio has been successfully imported. We've used your current asset allocation as a starting point.</p>
           <p className="mt-2">Total Portfolio Value: ₹{portfolio?.data.totalValue.toLocaleString()}</p>
@@ -352,21 +434,21 @@ const PortfolioAllocation: React.FC = () => {
       
       {/* Python Backend Status */}
       {!isPythonConnected && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
+        <div className="bg-yellow-900 border-l-4 border-yellow-500 text-yellow-100 p-4 mb-6">
           <p className="font-bold">Backend Connection Issue</p>
           <p>Could not connect to the Python AI service. Make sure the Python server is running at http://localhost:5000</p>
-          <p className="text-sm mt-2">Run the Python server with: <code className="bg-gray-200 px-2 py-1 rounded">python python_service/risk_assessment_server.py</code></p>
+          <p className="text-sm mt-2">Run the Python server with: <code className="bg-gray-800 px-2 py-1 rounded">python python_service/risk_assessment_server.py</code></p>
         </div>
       )}
       
       {/* LLM Analysis Message */}
       {llmMessage && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
+        <div className="bg-indigo-900 border-l-4 border-indigo-500 text-indigo-100 p-4 mb-6">
           <p className="font-bold">{isLoading ? 'AI Analysis in Progress' : 'AI Analysis Complete'}</p>
           <p>{llmMessage}</p>
           {isLoading && (
             <div className="mt-2 flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-300 mr-2"></div>
               <span>Processing...</span>
             </div>
           )}
@@ -374,20 +456,20 @@ const PortfolioAllocation: React.FC = () => {
       )}
       
       {/* Risk Score Display */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4">Your Risk Profile</h3>
+      <div className="dark-card p-6 mb-8">
+        <h3 className="text-lg font-semibold mb-4 text-indigo-300">Your Risk Profile</h3>
         
         {/* Update Mode Buttons */}
         <div className="flex space-x-4 mb-6">
           <button
             onClick={handleAutoUpdate}
             disabled={isLoading}
-            className={`px-4 py-2 rounded-md ${
+            className={`px-4 py-2 rounded-md transition ${
               isLoading 
-                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
                 : isAutoUpdate 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-700'
+                  ? 'accent-button' 
+                  : 'secondary-button'
             }`}
           >
             {isLoading ? 'Analyzing...' : 'Auto Update'}
@@ -395,12 +477,12 @@ const PortfolioAllocation: React.FC = () => {
           <button
             onClick={handleManualUpdate}
             disabled={isLoading}
-            className={`px-4 py-2 rounded-md ${
+            className={`px-4 py-2 rounded-md transition ${
               isLoading
-                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                 : !isAutoUpdate 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-700'
+                  ? 'accent-button' 
+                  : 'secondary-button'
             }`}
           >
             Manual Update
@@ -409,11 +491,11 @@ const PortfolioAllocation: React.FC = () => {
         
         <div className="mb-4">
           <div className="flex justify-between mb-1">
-            <span className="text-sm text-gray-600">Risk Tolerance</span>
-            <span className="text-sm font-medium">{riskScore.toFixed(1)}/10</span>
+            <span className="text-sm text-gray-300">Risk Tolerance</span>
+            <span className="text-sm font-medium text-gray-200">{riskScore.toFixed(1)}/10</span>
           </div>
           
-          <div className="relative">
+          <div className="relative mb-4">
             <div 
               className="absolute top-0 left-0 h-4 rounded-full pointer-events-none"
               style={{
@@ -436,7 +518,7 @@ const PortfolioAllocation: React.FC = () => {
             />
           </div>
           
-          <div className="flex justify-between mt-2 text-xs text-gray-600">
+          <div className="flex justify-between mt-2 text-xs text-gray-400">
             <span>Conservative</span>
             <span>Moderate</span>
             <span>Aggressive</span>
@@ -444,8 +526,8 @@ const PortfolioAllocation: React.FC = () => {
         </div>
         
         <div className="mb-4">
-          <h4 className="font-bold text-lg">{getRiskCategory(riskScore)} Investor</h4>
-          <p className="text-gray-700">
+          <h4 className="font-bold text-lg text-indigo-300">{getRiskCategory(riskScore)} Investor</h4>
+          <p className="text-gray-300">
             {riskScore <= 3 
               ? 'Focus on capital preservation with minimal risk. Suitable for short-term goals.'
               : riskScore <= 6 
@@ -456,35 +538,33 @@ const PortfolioAllocation: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="bg-green-100 p-2 rounded">
-            <p className="font-medium">Conservative</p>
-            <p className="text-sm text-gray-600">1-3</p>
+          <div className="bg-opacity-20 bg-green-800 p-2 rounded border border-green-700">
+            <p className="font-medium text-green-400">Conservative</p>
+            <p className="text-sm text-gray-300">1-3</p>
           </div>
-          <div className="bg-yellow-100 p-2 rounded">
-            <p className="font-medium">Moderate</p>
-            <p className="text-sm text-gray-600">4-6</p>
+          <div className="bg-opacity-20 bg-yellow-800 p-2 rounded border border-yellow-700">
+            <p className="font-medium text-yellow-400">Moderate</p>
+            <p className="text-sm text-gray-300">4-6</p>
           </div>
-          <div className="bg-red-100 p-2 rounded">
-            <p className="font-medium">Aggressive</p>
-            <p className="text-sm text-gray-600">7-10</p>
+          <div className="bg-opacity-20 bg-red-800 p-2 rounded border border-red-700">
+            <p className="font-medium text-red-400">Aggressive</p>
+            <p className="text-sm text-gray-300">7-10</p>
           </div>
         </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4">Customize Your Allocation</h3>
+      <div className="dark-card p-6 mb-8">
+        <h3 className="text-lg font-semibold mb-4 text-indigo-300">Customize Your Allocation</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             {allocation.map((asset, index) => (
               <div key={asset.key} className="mb-4">
                 <div className="flex justify-between mb-2">
-                  <label className="font-medium">{asset.label}</label>
-                  <span className="text-gray-600">{asset.value.toFixed(1)}%</span>
+                  <label className="font-medium text-gray-200">{asset.label}</label>
+                  <span className="text-gray-300">{asset.value.toFixed(1)}%</span>
                 </div>
-                <div 
-                  className="w-full h-3 bg-gray-200 rounded-full overflow-hidden"
-                >
+                <div className="w-full h-3 progress-bar-bg rounded-full overflow-hidden">
                   <div 
                     className="h-full rounded-full" 
                     style={{
@@ -497,18 +577,18 @@ const PortfolioAllocation: React.FC = () => {
             ))}
 
             <div className="mt-6">
-              <label className="block font-medium mb-2">Initial Investment (₹)</label>
+              <label className="block font-medium mb-2 text-gray-200">Initial Investment (₹)</label>
               <input
                 type="number"
                 value={initialInvestment}
                 onChange={(e) => setInitialInvestment(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
           </div>
           
           <div className="flex flex-col items-center justify-center">
-            <h4 className="text-md font-medium mb-4">Asset Allocation</h4>
+            <h4 className="text-md font-medium mb-4 text-indigo-300">Asset Allocation</h4>
             <div className="w-full max-w-xs">
               <Pie 
                 data={{
@@ -518,34 +598,14 @@ const PortfolioAllocation: React.FC = () => {
                       data: allocation.map(a => a.value),
                       backgroundColor: allocation.map(a => a.color),
                       borderWidth: 1,
+                      borderColor: '#242424'
                     }
                   ]
                 }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: 'bottom',
-                      labels: {
-                        boxWidth: 12,
-                        font: {
-                          size: 11
-                        }
-                      }
-                    },
-                    tooltip: {
-                      callbacks: {
-                        label: function(context) {
-                          const value = context.raw as number;
-                          return `${context.label}: ${value.toFixed(1)}%`;
-                        }
-                      }
-                    }
-                  }
-                }}
+                options={chartOptions}
               />
             </div>
-            <p className="text-sm text-gray-500 mt-4">
+            <p className="text-sm text-gray-400 mt-4">
               Total: {
                 (() => {
                   const total = allocation.reduce((sum, item) => sum + item.value, 0);
@@ -557,30 +617,11 @@ const PortfolioAllocation: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Projected Growth Over Time</h3>
+      <div className="dark-card p-6">
+        <h3 className="text-lg font-semibold mb-4 text-indigo-300">Projected Growth Over Time</h3>
         <Line
           data={calculateProjectedGrowth()}
-          options={{
-            responsive: true,
-            plugins: {
-              legend: {
-                position: 'top' as const,
-              },
-              title: {
-                display: true,
-                text: 'Portfolio Value Projection'
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  callback: (value) => `₹${value.toLocaleString()}`
-                }
-              }
-            }
-          }}
+          options={lineChartOptions}
         />
       </div>
     </div>

@@ -187,10 +187,10 @@ const RiskAssessment: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#121212] text-white">
       {/* Display a message if coming from manual update */}
       {isManualUpdateMode && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 w-full max-w-3xl">
+        <div className="bg-indigo-900 border-l-4 border-indigo-500 text-indigo-100 p-4 mb-6 w-full max-w-3xl">
           <p className="font-bold">Manual Update Mode</p>
           <p>Answer the questions to recalculate your risk profile and optimize your portfolio allocation.</p>
         </div>
@@ -203,9 +203,9 @@ const RiskAssessment: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
           transition={{ duration: 0.5 }}
-          className="bg-white w-full max-w-3xl p-8 rounded-lg shadow-lg"
+          className="bg-[#242424] border border-[#333333] w-full max-w-3xl p-8 rounded-lg shadow-lg"
         >
-          <h2 className="text-xl font-bold mb-6 text-center">
+          <h2 className="text-xl font-bold mb-6 text-center text-indigo-300">
             {currentQuestion.question}
           </h2>
           <div className="space-y-4">
@@ -214,10 +214,10 @@ const RiskAssessment: React.FC = () => {
                 <button
                   key={option}
                   onClick={() => handleInputChange(currentQuestion.id as keyof QuestionnaireResponse, option)}
-                  className={`block w-full p-4 text-lg text-left border rounded-lg ${
+                  className={`block w-full p-4 text-lg text-left border rounded-lg transition ${
                     responses[currentQuestion.id as keyof QuestionnaireResponse] === option
-                      ? 'bg-indigo-500 text-white'
-                      : 'bg-gray-100 hover:bg-indigo-100'
+                      ? 'bg-indigo-600 text-white border-indigo-700'
+                      : 'bg-[#1e1e1e] text-gray-300 border-[#333333] hover:bg-[#2a2a2a]'
                   }`}
                 >
                   {option}
@@ -229,10 +229,10 @@ const RiskAssessment: React.FC = () => {
                 <button
                   key={option}
                   onClick={() => handleMultiSelect(currentQuestion.id as 'loans' | 'investmentInterests', option)}
-                  className={`block w-full p-4 text-lg text-left border rounded-lg ${
+                  className={`block w-full p-4 text-lg text-left border rounded-lg transition ${
                     responses[currentQuestion.id as keyof QuestionnaireResponse]?.includes(option)
-                      ? 'bg-indigo-500 text-white'
-                      : 'bg-gray-100 hover:bg-indigo-100'
+                      ? 'bg-indigo-600 text-white border-indigo-700'
+                      : 'bg-[#1e1e1e] text-gray-300 border-[#333333] hover:bg-[#2a2a2a]'
                   }`}
                 >
                   {option}
@@ -246,7 +246,11 @@ const RiskAssessment: React.FC = () => {
         <button
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
-          className="px-6 py-3 bg-gray-300 text-gray-600 rounded-lg hover:bg-gray-400 disabled:bg-gray-200"
+          className={`px-6 py-3 rounded-lg transition ${
+            currentQuestionIndex === 0 
+              ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+              : 'bg-[#333333] text-gray-300 hover:bg-[#444444]'
+          }`}
         >
           Previous
         </button>
@@ -254,14 +258,14 @@ const RiskAssessment: React.FC = () => {
         {currentQuestionIndex < questions.length - 1 ? (
           <button
             onClick={handleNext}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
           >
             Next
           </button>
         ) : (
           <button
             onClick={handleSubmit}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
           >
             Submit
           </button>

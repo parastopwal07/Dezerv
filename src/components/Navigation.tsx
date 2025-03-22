@@ -12,12 +12,12 @@ const Navigation: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-[#242424] shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
-            <PieChart className="h-8 w-8 text-indigo-600" />
-            <span className="text-xl font-bold text-gray-900">RoboAdvisor</span>
+            <PieChart className="h-8 w-8 text-indigo-400" />
+            <span className="text-xl font-bold text-white">RoboAdvisor</span>
           </Link>
           
           <div className="flex space-x-4">
@@ -27,8 +27,8 @@ const Navigation: React.FC = () => {
                 to={path}
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium ${
                   location.pathname === path
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-indigo-900 text-indigo-300'
+                    : 'text-gray-300 hover:bg-gray-800'
                 }`}
               >
                 <Icon className="h-4 w-4" />
