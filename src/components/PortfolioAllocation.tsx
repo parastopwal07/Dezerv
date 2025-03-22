@@ -16,6 +16,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setRiskProfile } from '../store/slices/riskProfileSlice';
 import { getLLMRiskAssessment, getAllocationFromRiskScore } from '../utils/llmService';
+import * as HistoricalService from '../utils/historicalDataService';
 
 ChartJS.register(
   CategoryScale,
@@ -77,6 +78,11 @@ const PortfolioAllocation: React.FC = () => {
   const [llmMessage, setLlmMessage] = useState('');
   const [isPythonConnected, setIsPythonConnected] = useState(true);
   const [showImportedPortfolio, setShowImportedPortfolio] = useState(false);
+  
+  // Add state for historical performance data
+  const [historicalReturns, setHistoricalReturns] = useState<HistoricalService.HistoricalReturn[]>([]);
+  const [annualizedReturn, setAnnualizedReturn] = useState<number>(0);
+  const [volatility, setVolatility] = useState<number>(0);
 
   useEffect(() => {
     // Check if there's a portfolio risk message in localStorage
@@ -418,6 +424,93 @@ const PortfolioAllocation: React.FC = () => {
     }
   };
 
+  // Calculate historical returns when allocation changes
+  useEffect(() => {
+    // Only calculate if we have a valid allocation
+    const totalAllocation = allocation.reduce((sum, item) => sum + item.value, 0);
+    if (totalAllocation > 0) {
+      const fetchData = async () => {
+        try {
+          const returns = await HistoricalService.calculateHistoricalReturns(allocation, initialInvestment);
+          setHistoricalReturns(returns);
+          setAnnualizedReturn(HistoricalService.calculateAnnualizedReturn(returns));
+          setVolatility(HistoricalService.calculateVolatility(returns));
+        } catch (error) {
+          console.error("Error calculating historical returns:", error);
+        }
+      };
+      
+      fetchData();
+    }
+  }, [allocation, initialInvestment]);
+
+  // Configuration for historical chart
+  const historicalChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          color: '#f3f4f6'
+        }
+      },
+      title: {
+        display: true,
+        text: 'Historical Portfolio Performance',
+        color: '#f3f4f6'
+      },
+      tooltip: {
+        backgroundColor: '#333',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        callbacks: {
+          label: function(context: any) {
+            return `Value: ₹${context.raw.toLocaleString()}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        ticks: {
+          callback: (value: any) => `₹${value.toLocaleString()}`,
+          color: '#9ca3af'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      },
+      x: {
+        ticks: {
+          maxRotation: 90,
+          minRotation: 45,
+          color: '#9ca3af'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      }
+    }
+  };
+
+  // Format historical data for chart
+  const getHistoricalChartData = () => {
+    // Display every 3 months to avoid overcrowding x-axis
+    const filteredReturns = historicalReturns.filter((_, index) => index % 3 === 0);
+    
+    return {
+      labels: filteredReturns.map(item => item.month),
+      datasets: [{
+        label: 'Portfolio Value',
+        data: filteredReturns.map(item => item.value),
+        borderColor: 'rgb(129, 140, 248)',
+        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+        fill: true
+      }]
+    };
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-6 text-indigo-300">Portfolio Allocation</h2>
@@ -589,7 +682,7 @@ const PortfolioAllocation: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            {allocation.map((asset, index) => (
+            {allocation.map((asset) => (
               <div key={asset.key} className="mb-4">
                 <div className="flex justify-between mb-2">
                   <label className="font-medium text-gray-200">{asset.label}</label>
@@ -648,6 +741,54 @@ const PortfolioAllocation: React.FC = () => {
         </div>
       </div>
 
+      {/* Add Historical Performance Card before Projected Growth */}
+      <div className="dark-card p-6 mb-8">
+        <h3 className="text-lg font-semibold mb-4 text-indigo-300">Historical Performance</h3>
+        
+        {historicalReturns.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-[#1e1e1e] border border-[#333333] p-4 rounded">
+                <h4 className="text-sm font-medium text-gray-400">Initial Investment</h4>
+                <p className="text-xl font-bold text-white">₹{initialInvestment.toLocaleString()}</p>
+              </div>
+              
+              <div className="bg-[#1e1e1e] border border-[#333333] p-4 rounded">
+                <h4 className="text-sm font-medium text-gray-400">Annualized Return</h4>
+                <p className={`text-xl font-bold ${annualizedReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {annualizedReturn.toFixed(2)}%
+                </p>
+              </div>
+              
+              <div className="bg-[#1e1e1e] border border-[#333333] p-4 rounded">
+                <h4 className="text-sm font-medium text-gray-400">Volatility</h4>
+                <p className="text-xl font-bold text-amber-400">
+                  {volatility.toFixed(2)}%
+                </p>
+              </div>
+            </div>
+            
+            <p className="text-gray-300 mb-4">
+              This chart shows how your current allocation would have performed over the past {(historicalReturns.length / 12).toFixed(1)} years based on historical market data.
+            </p>
+            
+            <Line
+              data={getHistoricalChartData()}
+              options={historicalChartOptions}
+            />
+            
+            <p className="text-xs text-gray-400 mt-4">
+              Note: Past performance is not indicative of future results. This simulation is based on historical data and your current allocation strategy.
+            </p>
+          </>
+        ) : (
+          <div className="flex justify-center items-center h-64 bg-[#1a1a1a] rounded-lg">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-300 mr-2"></div>
+            <p className="text-gray-400">Calculating historical performance...</p>
+          </div>
+        )}
+      </div>
+      
       <div className="dark-card p-6">
         <h3 className="text-lg font-semibold mb-4 text-indigo-300">Projected Growth Over Time</h3>
         <Line
