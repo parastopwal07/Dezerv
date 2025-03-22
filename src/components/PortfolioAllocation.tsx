@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -54,6 +55,7 @@ const PortfolioAllocation: React.FC = () => {
   const [initialInvestment, setInitialInvestment] = useState(100000);
   const [years, setYears] = useState(10);
   const [riskScore, setRiskScore] = useState(0);
+  const [isAutoUpdate, setIsAutoUpdate] = useState(true);
 
   useEffect(() => {
     // Calculate risk score (simplified implementation)
@@ -66,6 +68,14 @@ const PortfolioAllocation: React.FC = () => {
     
     calculateRiskScore();
     
+    // Only apply automatic allocation updates if auto update is enabled
+    if (isAutoUpdate && riskProfile?.allocationStrategy) {
+      updateAllocationFromProfile();
+    }
+  }, [riskProfile, isAutoUpdate]);
+
+  // Function to update allocation based on risk profile
+  const updateAllocationFromProfile = () => {
     if (riskProfile?.allocationStrategy) {
       const newAllocation = [...allocation];
       newAllocation[0].value = riskProfile.allocationStrategy.equities * 0.75; // 75% of equities to stocks
@@ -75,7 +85,18 @@ const PortfolioAllocation: React.FC = () => {
       newAllocation[4].value = riskProfile.allocationStrategy.equities * 0.25; // 25% of equities to mutual funds
       setAllocation(newAllocation);
     }
-  }, [riskProfile]);
+  };
+
+  // Function to handle Auto Update button click
+  const handleAutoUpdate = () => {
+    setIsAutoUpdate(true);
+    updateAllocationFromProfile();
+  };
+
+  // Function to handle Manual Update button click
+  const handleManualUpdate = () => {
+    setIsAutoUpdate(false);
+  };
 
   const handleSliderChange = (index: number, value: number) => {
     const newAllocation = [...allocation];
@@ -144,6 +165,30 @@ const PortfolioAllocation: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
         <h3 className="text-lg font-semibold mb-4">Your Risk Profile</h3>
         
+        {/* Update Mode Buttons */}
+        <div className="flex space-x-4 mb-6">
+          <button
+            onClick={handleAutoUpdate}
+            className={`px-4 py-2 rounded-md ${
+              isAutoUpdate 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            Auto Update
+          </button>
+          <button
+            onClick={handleManualUpdate}
+            className={`px-4 py-2 rounded-md ${
+              !isAutoUpdate 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            Manual Update
+          </button>
+        </div>
+        
         <div className="flex items-center mb-4">
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div 
@@ -201,6 +246,7 @@ const PortfolioAllocation: React.FC = () => {
               style={{
                 background: `linear-gradient(to right, ${asset.color} ${asset.value}%, #e5e7eb ${asset.value}%)`
               }}
+              disabled={isAutoUpdate}
             />
           </div>
         ))}
