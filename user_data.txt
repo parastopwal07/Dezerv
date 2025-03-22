@@ -1,0 +1,178 @@
+# Sample Financial Messages Dataset
+
+## Banking Notifications
+
+### Transaction Alert - Chase Bank
+From: alerts@chase.com
+Date: March 15, 2025
+Subject: Chase Alert: Transaction on your account ending in 8742
+
+A transaction of $234.76 was charged to your Chase Freedom account ending in 8742 at COSTCO WHOLESALE #482 on March 15, 2025 at 10:24 AM EST.
+
+If you don't recognize this transaction, please call us immediately at 1-800-432-3117.
+
+### Low Balance Alert - Bank of America
+From: customerservice@bofa.com
+Date: March 18, 2025
+Subject: Your account balance is below $100
+
+Your checking account ending in 6214 balance is currently $87.32, which is below your alert threshold of $100.00. Please log in to your account to make a deposit or transfer funds.
+
+### Direct Deposit Confirmation - Wells Fargo
+From: alerts@wellsfargo.com
+Date: March 14, 2025
+Subject: Direct Deposit Received
+
+A direct deposit of $3,245.67 from ACME CORPORATION PAYROLL has been credited to your account ending in 4571 on March 14, 2025. Your current available balance is $5,687.21.
+
+## Credit Card Statements
+
+### Monthly Statement - American Express
+From: statements@americanexpress.com
+Date: March 1, 2025
+Subject: Your March Statement is Now Available
+
+Account Number: XXXX-XXXXXX-31005
+Statement Period: 02/01/2025 - 02/28/2025
+Payment Due Date: March 25, 2025
+Minimum Payment Due: $35.00
+New Balance: $1,247.89
+
+View your complete statement online at americanexpress.com/myaccount
+
+### Credit Card Payment Confirmation - Capital One
+From: customerservice@capitalone.com
+Date: March 10, 2025
+Subject: Payment Confirmation
+
+Thank you for your payment of $500.00 to your Capital One Quicksilver Card ending in 9823 on March 10, 2025. Your payment has been successfully processed. Your new balance is $783.42.
+
+### Late Payment Notice - Discover
+From: customerservice@discover.com
+Date: March 20, 2025
+Subject: Your payment is past due - Action Required
+
+Your payment of $125.00 for your Discover Card ending in 6532 was due on March 15, 2025 and has not been received. Please make a payment immediately to avoid additional late fees. A late fee of $39.00 has been applied to your account.
+
+## Loan Notifications
+
+### Mortgage Payment Reminder - CitiMortgage
+From: mortgageservices@citi.com
+Date: March 5, 2025
+Subject: Your mortgage payment is due soon
+
+This is a reminder that your monthly mortgage payment of $1,756.43 for loan #45721890 is due on March 10, 2025. Set up AutoPay to ensure you never miss a payment.
+
+Property Address: 123 Oak Street, Springfield, IL 62704
+
+### Student Loan Payment Confirmation - Nelnet
+From: customerservice@nelnet.com
+Date: March 12, 2025
+Subject: Payment Confirmation
+
+Your student loan payment of $342.18 has been successfully processed on March 12, 2025. 
+
+Loan Details:
+- Account Number: D34-765219
+- Principal Payment: $237.45
+- Interest Payment: $104.73
+- Remaining Balance: $24,678.93
+- Next Payment Due: April 12, 2025
+
+### Auto Loan Statement - Bank of America
+From: autoloanservices@bofa.com
+Date: March 1, 2025
+Subject: Your Auto Loan Statement
+
+Loan Number: 7621458932
+Payment Due Date: March 15, 2025
+Payment Amount: $387.92
+Remaining Balance: $14,567.82
+Loan Maturity Date: May 15, 2027
+
+## Investment Updates
+
+### Quarterly Investment Statement - Fidelity
+From: statements@fidelity.com
+Date: March 2, 2025
+Subject: Your Q1 2025 Investment Summary
+
+Account: Individual Investment Account #Z4X-876521
+Period: January 1, 2025 - March 1, 2025
+
+Account Summary:
+- Beginning Balance: $78,342.56
+- Deposits: $3,000.00
+- Withdrawals: $0.00
+- Change in Investment Value: +$2,546.78
+- Ending Balance: $83,889.34
+
+Performance (YTD): +7.08%
+
+### Dividend Payment Notice - Vanguard
+From: notifications@vanguard.com
+Date: March 18, 2025
+Subject: Dividend Payment Notification
+
+A dividend payment of $234.56 from your VFIAX (Vanguard 500 Index Fund) holding has been deposited into your account ending in 4532 on March 18, 2025.
+
+### Stock Purchase Confirmation - Charles Schwab
+From: notifications@schwab.com
+Date: March 16, 2025
+Subject: Trade Confirmation
+
+Your order to purchase 10 shares of AAPL at $175.32 per share has been executed on March 16, 2025 at 11:42 AM EST. The total cost including commission was $1,758.20.
+
+## Bills and Utilities
+
+### Utility Bill Notification - ConEdison
+From: ebilling@coned.com
+Date: March 5, 2025
+Subject: Your ConEdison Bill is Ready
+
+Your monthly electricity bill for service at 123 Oak Street, Springfield, IL 62704 is now available.
+
+Amount Due: $143.67
+Due Date: March 25, 2025
+Account Number: 7842651
+
+### Insurance Premium Notice - State Farm
+From: billing@statefarm.com
+Date: March 8, 2025
+Subject: Auto Insurance Premium Due
+
+Your six-month auto insurance premium of $543.82 for policy #IL7842651 is due on April 1, 2025. Please log in to your account to make a payment or set up autopay.
+
+### Subscription Renewal - Netflix
+From: info@netflix.com
+Date: March 15, 2025
+Subject: Netflix Subscription Renewal
+
+We've processed your monthly subscription payment of $19.99 for your Premium plan. Your next billing date will be April 15, 2025.
+
+## Tax Notifications
+
+### Tax Return Acceptance - IRS
+From: do-not-reply@irs.gov
+Date: March 4, 2025
+Subject: Your Federal Tax Return Has Been Accepted
+
+Your 2024 federal tax return has been accepted by the IRS. 
+
+Filing Status: Single
+Adjusted Gross Income: $67,432.00
+Federal Refund Amount: $1,243.00
+Expected Deposit Date: March 18-25, 2025
+Direct Deposit Account: Checking ****8742
+
+### Tax Document Available - Fidelity
+From: taxdocuments@fidelity.com
+Date: February 15, 2025
+Subject: Your 2024 1099 Forms Are Now Available
+
+Your 2024 tax documents are now available in your account:
+- Form 1099-DIV (Dividends and Distributions)
+- Form 1099-B (Proceeds from Broker Transactions)
+- Form 1099-INT (Interest Income)
+
+Please log in to your account to view and download these documents.

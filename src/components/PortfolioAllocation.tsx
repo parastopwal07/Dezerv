@@ -108,8 +108,8 @@ const PortfolioAllocation: React.FC = () => {
     setLlmMessage('Analyzing market conditions and your portfolio with AI...');
     
     try {
-      // Call the Python backend to get a new risk score
-      const newRiskScore = await getLLMRiskAssessment();
+      // Call the Python backend to get a new risk score, passing the current score
+      const newRiskScore = await getLLMRiskAssessment(riskScore);
       setLlmMessage(`Analysis complete! Your risk score has been updated to ${newRiskScore.toFixed(1)}/10 by our AI model`);
       setIsPythonConnected(true);
       

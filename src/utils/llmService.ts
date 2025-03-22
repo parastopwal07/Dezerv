@@ -10,12 +10,20 @@ const PYTHON_API_URL = 'http://localhost:8080';
 
 /**
  * Communicates with the Python backend to get a risk assessment
+ * @param currentRiskScore The current risk score to send to the backend
  * @returns A promise that resolves to a risk score between 1-10
  */
-export async function getLLMRiskAssessment(): Promise<number> {
+export async function getLLMRiskAssessment(currentRiskScore?: number): Promise<number> {
   try {
     console.log('Calling Python backend for risk assessment...');
-    const response = await fetch(`${PYTHON_API_URL}/api/risk-assessment`);
+    
+    // Add the risk score as a query parameter if it exists
+    const url = currentRiskScore !== undefined 
+      ? `${PYTHON_API_URL}/api/risk-assessment?risk_score=${currentRiskScore}`
+      : `${PYTHON_API_URL}/api/risk-assessment`;
+    
+    console.log(`Sending request to: ${url}`);
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
