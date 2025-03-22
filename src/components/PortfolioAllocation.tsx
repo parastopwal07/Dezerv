@@ -64,6 +64,7 @@ const PortfolioAllocation: React.FC = () => {
   const [isAutoUpdate, setIsAutoUpdate] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [llmMessage, setLlmMessage] = useState('');
+  const [isPythonConnected, setIsPythonConnected] = useState(true);
 
   useEffect(() => {
     // Calculate risk score (simplified implementation)
@@ -104,12 +105,13 @@ const PortfolioAllocation: React.FC = () => {
   // Function to handle Auto Update button click
   const handleAutoUpdate = async () => {
     setIsLoading(true);
-    setLlmMessage('Analyzing market conditions and your portfolio...');
+    setLlmMessage('Analyzing market conditions and your portfolio with AI...');
     
     try {
-      // Call the simulated LLM service to get a new risk score
+      // Call the Python backend to get a new risk score
       const newRiskScore = await getLLMRiskAssessment();
-      setLlmMessage(`Analysis complete! Your risk score has been updated to ${newRiskScore.toFixed(1)}/10`);
+      setLlmMessage(`Analysis complete! Your risk score has been updated to ${newRiskScore.toFixed(1)}/10 by our AI model`);
+      setIsPythonConnected(true);
       
       // Update the risk score state
       setRiskScore(newRiskScore);
@@ -141,7 +143,8 @@ const PortfolioAllocation: React.FC = () => {
       setAllocation(newAllocation);
     } catch (error) {
       console.error('Error updating risk profile:', error);
-      setLlmMessage('An error occurred while analyzing your portfolio.');
+      setLlmMessage('An error occurred while connecting to our AI service. Using fallback calculation instead.');
+      setIsPythonConnected(false);
     } finally {
       setIsLoading(false);
     }
@@ -286,6 +289,15 @@ const PortfolioAllocation: React.FC = () => {
         <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6">
           <p className="font-bold">Profile Updated</p>
           <p>Your risk profile has been recalculated and your portfolio allocation has been updated.</p>
+        </div>
+      )}
+      
+      {/* Python Backend Status */}
+      {!isPythonConnected && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
+          <p className="font-bold">Backend Connection Issue</p>
+          <p>Could not connect to the Python AI service. Make sure the Python server is running at http://localhost:5000</p>
+          <p className="text-sm mt-2">Run the Python server with: <code className="bg-gray-200 px-2 py-1 rounded">python python_service/risk_assessment_server.py</code></p>
         </div>
       )}
       
