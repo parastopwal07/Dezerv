@@ -292,10 +292,16 @@ const PortfolioAllocation: React.FC = () => {
     };
   };
   
-  // Calculate final projected value
+  // Calculate final projected value and total return
   const getProjectedValue = () => {
     const projectedData = calculateProjectedGrowth();
-    return projectedData.datasets[0].data[projectedData.datasets[0].data.length - 1];
+    const finalValue = projectedData.datasets[0].data[projectedData.datasets[0].data.length - 1];
+    const totalReturn = ((finalValue - initialInvestment) / initialInvestment) * 100;
+    
+    return {
+      finalValue,
+      totalReturn: totalReturn.toFixed(2)
+    };
   };
 
   // Function to get risk category based on score
@@ -467,7 +473,8 @@ const PortfolioAllocation: React.FC = () => {
     });
     
     // Generate values with some randomness to simulate market volatility
-    const values = [baseValue];
+    const values = [0]; // Start with 0% return (baseline)
+    let currentValue = baseValue;
     
     // Calculate volatility factor based on allocation
     const equityPercentage = allocation[0].value + allocation[4].value; // Stocks + Mutual Funds
@@ -477,21 +484,23 @@ const PortfolioAllocation: React.FC = () => {
       // Add randomness based on volatility
       const randomFactor = 1 + (Math.random() * 2 - 1) * volatilityFactor;
       // Apply monthly return + randomness
-      baseValue = baseValue * (1 + weightedMonthlyReturn * randomFactor);
+      currentValue = currentValue * (1 + weightedMonthlyReturn * randomFactor);
       
       // Add some market corrections/jumps for realism (5% chance of significant move)
       if (Math.random() < 0.05) {
         const marketEvent = (Math.random() > 0.5 ? 1 : -1) * Math.random() * 0.1;
-        baseValue = baseValue * (1 + marketEvent);
+        currentValue = currentValue * (1 + marketEvent);
       }
       
-      values.push(Math.round(baseValue));
+      // Calculate return percentage compared to initial investment
+      const returnPercentage = ((currentValue - initialInvestment) / initialInvestment) * 100;
+      values.push(parseFloat(returnPercentage.toFixed(2)));
     }
     
     return {
       labels,
       datasets: [{
-        label: 'Portfolio Value',
+        label: 'Return (%)',
         data: values,
         borderColor: 'rgb(99, 102, 241)',
         backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -506,23 +515,21 @@ const PortfolioAllocation: React.FC = () => {
     const historicalData = generateHistoricalData();
     const values = historicalData.datasets[0].data;
     
-    // Calculate total return
-    const startValue = values[0];
-    const endValue = values[values.length - 1];
-    const totalReturn = ((endValue - startValue) / startValue) * 100;
+    // Total return is the final value in our returns array
+    const totalReturn = values[values.length - 1];
     
     // Calculate annualized return
-    const annualizedReturn = (Math.pow(endValue / startValue, 1/historicalYears) - 1) * 100;
+    const annualizedReturn = (Math.pow(1 + (totalReturn / 100), 1/historicalYears) - 1) * 100;
     
-    // Calculate max drawdown
+    // Calculate max drawdown differently since we're working with return percentages
     let maxDrawdown = 0;
-    let peak = values[0];
+    let highestReturn = 0;
     
     for (let i = 1; i < values.length; i++) {
-      if (values[i] > peak) {
-        peak = values[i];
+      if (values[i] > highestReturn) {
+        highestReturn = values[i];
       } else {
-        const drawdown = (peak - values[i]) / peak * 100;
+        const drawdown = highestReturn - values[i];
         if (drawdown > maxDrawdown) {
           maxDrawdown = drawdown;
         }
@@ -548,10 +555,15 @@ const PortfolioAllocation: React.FC = () => {
       },
       title: {
         display: true,
-        text: 'Simulated Historical Performance',
+        text: 'Historical Returns',
         color: '#f3f4f6'
       },
       tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            return `Return: ${context.parsed.y}%`;
+          }
+        },
         backgroundColor: '#333',
         titleColor: '#fff',
         bodyColor: '#fff'
@@ -559,13 +571,17 @@ const PortfolioAllocation: React.FC = () => {
     },
     scales: {
       y: {
-        beginAtZero: false,
         ticks: {
-          callback: (value: any) => `₹${value.toLocaleString()}`,
+          callback: (value: any) => `${value}%`,
           color: '#9ca3af'
         },
         grid: {
           color: 'rgba(255, 255, 255, 0.1)'
+        },
+        title: {
+          display: true,
+          text: 'Return (%)',
+          color: '#9ca3af'
         }
       },
       x: {
@@ -816,23 +832,28 @@ const PortfolioAllocation: React.FC = () => {
       <div className="dark-card p-6 mb-8">
         <h3 className="text-lg font-semibold mb-4 text-indigo-300">Historical Performance</h3>
         
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center">
-            <label htmlFor="historicalYears" className="text-gray-300 mr-2">Time Period:</label>
-            <select 
-              id="historicalYears"
-              value={historicalYears}
-              onChange={(e) => setHistoricalYears(parseInt(e.target.value))}
-              className="bg-gray-800 text-gray-200 rounded border border-gray-700 px-3 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
+        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className="text-gray-300 mb-2">Time Period:</p>
+            <div className="flex space-x-2">
               {[1, 3, 5, 10].map(year => (
-                <option key={year} value={year}>{year} {year === 1 ? 'year' : 'years'}</option>
+                <button
+                  key={year}
+                  onClick={() => setHistoricalYears(year)}
+                  className={`px-3 py-1.5 rounded-md transition-all duration-200 text-sm font-medium ${
+                    historicalYears === year
+                      ? 'bg-indigo-700 text-white shadow-lg shadow-indigo-900/50 transform scale-105'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                  }`}
+                >
+                  {year} {year === 1 ? 'Year' : 'Years'}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
           
-          <div className="flex space-x-4">
-            <div className="text-center">
+          <div className="flex flex-wrap gap-4 md:gap-6">
+            <div className="text-center px-3 py-2 bg-opacity-20 bg-gray-800 rounded border border-gray-700">
               <p className="text-xs text-gray-400">Total Return</p>
               <p className={`text-lg font-semibold ${
                 parseFloat(calculateHistoricalMetrics().totalReturn) >= 0 
@@ -843,7 +864,7 @@ const PortfolioAllocation: React.FC = () => {
                 {calculateHistoricalMetrics().totalReturn}%
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center px-3 py-2 bg-opacity-20 bg-gray-800 rounded border border-gray-700">
               <p className="text-xs text-gray-400">Annualized</p>
               <p className={`text-lg font-semibold ${
                 parseFloat(calculateHistoricalMetrics().annualizedReturn) >= 0 
@@ -854,7 +875,7 @@ const PortfolioAllocation: React.FC = () => {
                 {calculateHistoricalMetrics().annualizedReturn}%
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center px-3 py-2 bg-opacity-20 bg-gray-800 rounded border border-gray-700">
               <p className="text-xs text-gray-400">Max Drawdown</p>
               <p className="text-lg font-semibold text-red-400">
                 -{calculateHistoricalMetrics().maxDrawdown}%
@@ -878,27 +899,36 @@ const PortfolioAllocation: React.FC = () => {
       <div className="dark-card p-6">
         <h3 className="text-lg font-semibold mb-4 text-indigo-300">Projected Growth Over Time</h3>
         
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center">
-            <label htmlFor="timeRange" className="text-gray-300 mr-2">Time Horizon:</label>
-            <select 
-              id="timeRange"
-              value={timeRange}
-              onChange={(e) => setTimeRange(parseInt(e.target.value))}
-              className="bg-gray-800 text-gray-200 rounded border border-gray-700 px-3 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
+        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className="text-gray-300 mb-2">Time Horizon:</p>
+            <div className="flex flex-wrap gap-2">
               {[5, 10, 15, 20, 25, 30].map(year => (
-                <option key={year} value={year}>{year} years</option>
+                <button
+                  key={year}
+                  onClick={() => setTimeRange(year)}
+                  className={`px-3 py-1.5 rounded-md transition-all duration-200 text-sm font-medium ${
+                    timeRange === year
+                      ? 'bg-indigo-700 text-white shadow-lg shadow-indigo-900/50 transform scale-105'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+                  }`}
+                >
+                  {year} Years
+                </button>
               ))}
-            </select>
+            </div>
           </div>
           
-          <div className="flex space-x-6">
-            <div className="text-center">
+          <div className="flex flex-wrap gap-4 md:gap-6">
+            <div className="text-center px-3 py-2 bg-opacity-20 bg-gray-800 rounded border border-gray-700">
               <p className="text-xs text-gray-400">Annual Return</p>
               <p className="text-lg font-semibold text-green-400">{calculatePerformanceMetrics().annualReturn}%</p>
             </div>
-            <div className="text-center">
+            <div className="text-center px-3 py-2 bg-opacity-20 bg-gray-800 rounded border border-gray-700">
+              <p className="text-xs text-gray-400">Total Return</p>
+              <p className="text-lg font-semibold text-blue-400">+{getProjectedValue().totalReturn}%</p>
+            </div>
+            <div className="text-center px-3 py-2 bg-opacity-20 bg-gray-800 rounded border border-gray-700">
               <p className="text-xs text-gray-400">Volatility</p>
               <p className="text-lg font-semibold text-yellow-400">{calculatePerformanceMetrics().volatility}%</p>
             </div>
@@ -917,7 +947,7 @@ const PortfolioAllocation: React.FC = () => {
           </div>
           <div className="bg-opacity-20 bg-green-900 p-4 rounded border border-green-800">
             <p className="text-xs text-gray-400">Projected Value ({timeRange} years)</p>
-            <p className="text-lg font-semibold text-green-400">₹{getProjectedValue().toLocaleString()}</p>
+            <p className="text-lg font-semibold text-green-400">₹{getProjectedValue().finalValue.toLocaleString()}</p>
           </div>
         </div>
       </div>
