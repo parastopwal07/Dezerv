@@ -502,17 +502,32 @@ const PortfolioAllocation: React.FC = () => {
             <span className="text-sm font-medium text-gray-200">{riskScore.toFixed(1)}/10</span>
           </div>
           
-          <div className="relative mb-4">
+          <div className="relative h-12 mb-2">
+            {/* Background gradient for the slider */}
             <div 
-              className="absolute top-0 left-0 h-4 rounded-full pointer-events-none"
+              className="absolute top-4 left-0 h-4 w-full rounded-full overflow-hidden"
               style={{
-                width: '100%',
-                background: `linear-gradient(to right, 
-                  #10B981 0%, #10B981 30%,
-                  #F59E0B 30%, #F59E0B 60%,
-                  #EF4444 60%, #EF4444 100%)`
+                background: 'linear-gradient(to right, #10B981 0%, #F59E0B 50%, #EF4444 100%)'
               }}
             ></div>
+            
+            {/* Custom marker showing current position */}
+            <div 
+              className="absolute top-1 z-20 transform -translate-x-1/2"
+              style={{ 
+                left: `${((riskScore - 1) / 9) * 100}%`,
+                transition: 'left 0.3s ease-out'
+              }}
+            >
+              <div className="flex flex-col items-center">
+                <div className="bg-white w-2 h-10 rounded-full shadow-lg"></div>
+                <div className="bg-white text-gray-800 font-bold text-xs rounded-full w-6 h-6 flex items-center justify-center mt-1 shadow-lg">
+                  {riskScore.toFixed(1)}
+                </div>
+              </div>
+            </div>
+            
+            {/* The actual slider input */}
             <input
               type="range"
               min="1"
@@ -520,15 +535,24 @@ const PortfolioAllocation: React.FC = () => {
               step="0.1"
               value={riskScore}
               onChange={(e) => handleRiskSliderChange(parseFloat(e.target.value))}
-              className="w-full h-4 appearance-none bg-transparent rounded-full cursor-pointer relative z-10"
+              className="absolute top-4 w-full h-4 appearance-none bg-transparent rounded-full cursor-pointer z-10 opacity-0"
               disabled={isAutoUpdate}
             />
           </div>
           
-          <div className="flex justify-between mt-2 text-xs text-gray-400">
-            <span>Conservative</span>
-            <span>Moderate</span>
-            <span>Aggressive</span>
+          <div className="flex justify-between mt-4 text-xs text-gray-400">
+            <span className="flex flex-col items-center">
+              <span className="w-2 h-2 rounded-full bg-green-500 mb-1"></span>
+              Conservative
+            </span>
+            <span className="flex flex-col items-center">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 mb-1"></span>
+              Moderate
+            </span>
+            <span className="flex flex-col items-center">
+              <span className="w-2 h-2 rounded-full bg-red-500 mb-1"></span>
+              Aggressive
+            </span>
           </div>
         </div>
         
