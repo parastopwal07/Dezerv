@@ -167,6 +167,7 @@ const PortfolioImport: React.FC = () => {
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-center mb-4">Portfolio Analysis</h2>
+          
           <PortfolioGraph data={graphData} />
           
           {/* Display Risk Assessment */}
@@ -201,9 +202,9 @@ const PortfolioImport: React.FC = () => {
             </div>
           )}
           
-          <div className="mt-8 bg-indigo-900 bg-opacity-30 border border-indigo-800 p-4 rounded-lg">
-            <p className="text-lg font-medium text-indigo-300 mb-2">Next Steps</p>
-            <p className="text-gray-300 mb-4">
+          <div className="mt-8 bg-blue-50 p-4 rounded-lg">
+            <p className="text-lg font-medium text-blue-800 mb-2">Next Steps</p>
+            <p className="text-blue-700 mb-4">
               Now that we've analyzed your current portfolio, let's see how it aligns with your risk profile and optimize it for better returns.
             </p>
             <button 
