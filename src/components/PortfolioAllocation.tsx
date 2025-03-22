@@ -39,11 +39,11 @@ const DEFAULT_GROWTH_RATES = {
 
 // Update colors for the dark theme
 const DARK_THEME_COLORS = [
-  'rgb(99, 102, 241)', // Indigo
+  'rgb(79, 70, 229)', // Darker Indigo (from rgb(99, 102, 241))
   'rgb(234, 179, 8)',  // Yellow/Gold
   'rgb(34, 197, 94)',  // Green
-  'rgb(168, 85, 247)', // Purple
-  'rgb(239, 68, 68)'   // Red
+  'rgb(147, 51, 234)', // Darker Purple (from rgb(168, 85, 247))
+  'rgb(220, 38, 38)'   // Darker Red (from rgb(239, 68, 68))
 ];
 
 interface AllocationSlider {
@@ -399,10 +399,10 @@ const PortfolioAllocation: React.FC = () => {
             return `${context.label}: ${value.toFixed(1)}%`;
           }
         },
-        backgroundColor: '#333',
+        backgroundColor: '#181818', // Darker from #333
         titleColor: '#fff',
         bodyColor: '#fff',
-        borderColor: '#555',
+        borderColor: '#333', // Darker from #555
         borderWidth: 1
       }
     }
@@ -424,7 +424,7 @@ const PortfolioAllocation: React.FC = () => {
         color: '#f3f4f6'
       },
       tooltip: {
-        backgroundColor: '#333',
+        backgroundColor: '#181818', // Darker from #333
         titleColor: '#fff',
         bodyColor: '#fff'
       }
@@ -437,7 +437,7 @@ const PortfolioAllocation: React.FC = () => {
           color: '#9ca3af'
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: 'rgba(255, 255, 255, 0.08)' // Slightly more subtle grid lines
         }
       },
       x: {
@@ -445,7 +445,7 @@ const PortfolioAllocation: React.FC = () => {
           color: '#9ca3af'
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: 'rgba(255, 255, 255, 0.08)' // Slightly more subtle grid lines
         }
       }
     }
@@ -502,8 +502,8 @@ const PortfolioAllocation: React.FC = () => {
       datasets: [{
         label: 'Return (%)',
         data: values,
-        borderColor: 'rgb(99, 102, 241)',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        borderColor: 'rgb(79, 70, 229)', // Darker indigo from rgb(99, 102, 241)
+        backgroundColor: 'rgba(79, 70, 229, 0.1)', // Darker indigo from rgba(99, 102, 241, 0.1)
         fill: true,
         tension: 0.2 // Add some curve to the line
       }]
@@ -564,7 +564,7 @@ const PortfolioAllocation: React.FC = () => {
             return `Return: ${context.parsed.y}%`;
           }
         },
-        backgroundColor: '#333',
+        backgroundColor: '#181818', // Darker from #333
         titleColor: '#fff',
         bodyColor: '#fff'
       }
