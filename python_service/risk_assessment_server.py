@@ -57,7 +57,7 @@ async def get_risk_assessment(risk_score: float = Query(None)):
     Pretend that you are a financial advisor robot, I want you to rate my risk taking capability on a scale of 1 to 10, upto 1 decimal point
     This is user_data : {user_data} 
     This is my current risk_score : {risk_score}
-    Only return a singular number in json format , with keys : risk_score and reason in that order
+    Only return a singular number in json format , with keys : risk_score and reason in that order. Be verbose in your reason please and incorporate all of your financial knowledge. Also do NOT HALLUCINATE
     '''
     
     raw_response = my_llm.get_response(prompt)
@@ -126,7 +126,7 @@ async def analyze_portfolio(portfolio: PortfolioData):
     Additional context:
     {user_data}
     
-    Only return a response in JSON format with keys: risk_score and reason
+    Only return a response in JSON format with keys: risk_score and reason . Be verbose in your reason please and incorporate all of your financial knowledge. Also do NOT HALLUCINATE
     '''
     
     raw_response = my_llm.get_response(prompt)
