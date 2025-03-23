@@ -1,5 +1,41 @@
 # Sample Financial Messages Dataset
 
+## Personal Life Events
+
+### Death in Family
+From: john.smith@email.com
+Date: February 10, 2025
+Subject: Need to discuss financial changes
+
+Hi Financial Advisor,
+
+I wanted to let you know that my mother passed away last week. We're dealing with her estate now, and I need to reconsider my investment strategy. I'm feeling much more cautious about risk at the moment and would like to discuss moving some investments to more conservative options. Can we schedule a call this week?
+
+Best,
+John
+
+### New Child
+From: sarah.johnson@email.com
+Date: March 3, 2025
+Subject: Financial planning after baby
+
+Hello,
+
+My husband and I just welcomed our first child last month! We're thrilled but also concerned about our financial future. We need to start a college fund and update our insurance policies. I think we need to reduce our exposure to high-risk investments while we adjust to these new responsibilities.
+
+Thanks,
+Sarah
+
+### Job Loss
+From: michael.williams@email.com
+Date: February 25, 2025
+Subject: Portfolio adjustments needed
+
+I was recently laid off from my position at Tech Solutions Inc. While I have 6 months of emergency savings, I'm concerned about my current investment allocation. Until I secure a new position, I'd like to shift to a more conservative portfolio to preserve capital. Please advise on the best way to reduce risk in the current market.
+
+Regards,
+Michael
+
 ## Banking Notifications
 
 ### Transaction Alert - Chase Bank

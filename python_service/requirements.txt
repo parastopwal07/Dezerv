@@ -1,3 +1,7 @@
 fastapi==0.95.0
 uvicorn==0.21.1
 flask-cors==3.0.10
+pymongo 
+sentence-transformers 
+faiss-cpu 
+g4f
