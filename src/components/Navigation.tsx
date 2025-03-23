@@ -17,7 +17,7 @@ const Navigation: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
             <PieChart className="h-8 w-8 text-indigo-400" />
-            <span className="text-xl font-bold text-white">RoboAdvisor</span>
+            <span className="text-xl font-bold text-white">NexGrow</span>
           </Link>
           
           <div className="flex space-x-4">
